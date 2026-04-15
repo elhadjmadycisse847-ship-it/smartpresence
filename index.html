@@ -1,37 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SmartPresence ULTRA PRO</title>
+  <title>SmartPresence ULTIME</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      background: #f2f2f2;
-    }
+    body { font-family: Arial; text-align: center; background: #f2f2f2; }
 
-    input {
-      padding: 10px;
-      margin: 5px;
-      width: 80%;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
+    input { padding: 10px; margin: 5px; width: 80%; border-radius: 8px; }
 
-    button {
-      padding: 10px;
-      margin: 5px;
-      border-radius: 8px;
-      border: none;
-      background: blue;
-      color: white;
-    }
+    button { padding: 10px; margin: 5px; border-radius: 8px; background: blue; color: white; }
 
-    #reader {
-      margin: auto;
-      margin-top: 20px;
-    }
+    video, canvas { width: 300px; margin-top: 10px; }
 
     #liste {
       background: white;
@@ -39,8 +19,7 @@
       margin-top: 20px;
       border-radius: 10px;
       width: 90%;
-      margin-left: auto;
-      margin-right: auto;
+      margin: auto;
       text-align: left;
     }
   </style>
@@ -48,17 +27,22 @@
 
 <body>
 
-<h2>📌 SmartPresence ULTRA PRO</h2>
+<h2>📌 SmartPresence ULTIME</h2>
 
 <input type="text" id="nom" placeholder="Nom"><br>
 <input type="text" id="matricule" placeholder="Matricule"><br>
 
 <button onclick="startScanner()">📸 Scanner QR</button>
-<button onclick="switchCamera()">🔄 Changer caméra</button>
+<button onclick="switchCamera()">🔄 Caméra</button>
 
-<div id="reader" style="width:300px;"></div>
+<div id="reader"></div>
 
-<h3>📋 Liste des présences</h3>
+<h3>📸 Photo</h3>
+<video id="video" autoplay></video><br>
+<button onclick="prendrePhoto()">📸 Prendre photo</button>
+<canvas id="canvas" style="display:none;"></canvas>
+
+<h3>📋 Liste</h3>
 <ul id="liste"></ul>
 
 <script type="module">
@@ -67,65 +51,85 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/fireba
 import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBsFxW7QON1JhWshuwz8EXE9NggQ0fCUMA",
-  authDomain: "smartpresence-ff489.firebaseapp.com",
-  databaseURL: "https://smartpresence-ff489-default-rtdb.firebaseio.com",
-  projectId: "smartpresence-ff489",
-  storageBucket: "smartpresence-ff489.firebasestorage.app",
-  messagingSenderId: "676917669187",
-  appId: "1:676917669187:web:d825c0b3ff3ee0944c13f6"
+  apiKey: "AIzaSy...",
+  authDomain: "...",
+  databaseURL: "...",
+  projectId: "...",
+  storageBucket: "...",
+  messagingSenderId: "...",
+  appId: "..."
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 📍 GPS
-let userLatitude;
-let userLongitude;
-
-navigator.geolocation.getCurrentPosition((position) => {
-  userLatitude = position.coords.latitude;
-  userLongitude = position.coords.longitude;
+// GPS
+let lat, long;
+navigator.geolocation.getCurrentPosition(pos => {
+  lat = pos.coords.latitude;
+  long = pos.coords.longitude;
 });
 
-// 📊 LISTE
+// PHOTO
+let photoData = "";
+
+navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+  document.getElementById("video").srcObject = stream;
+});
+
+window.prendrePhoto = function() {
+  const canvas = document.getElementById("canvas");
+  const video = document.getElementById("video");
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  photoData = canvas.toDataURL("image/png");
+
+  alert("📸 Photo capturée !");
+};
+
+// LISTE
 const liste = document.getElementById("liste");
 
-onValue(ref(db, "presences"), (snapshot) => {
+onValue(ref(db, "presences"), snapshot => {
   liste.innerHTML = "";
-
-  snapshot.forEach((child) => {
+  snapshot.forEach(child => {
     const data = child.val();
-
     let li = document.createElement("li");
-    li.textContent = data.nom + " (" + data.matricule + ") - " + data.date;
-
+    li.textContent = data.nom + " - " + data.date;
     liste.appendChild(li);
   });
 });
 
-// 📸 CAMERA
-let currentCamera = "environment";
+// QR
 let html5QrCode;
+let cam = "environment";
 
-// ▶️ SCAN
-window.startScanner = function () {
+window.startScanner = function() {
   html5QrCode = new Html5Qrcode("reader");
 
   html5QrCode.start(
-    { facingMode: currentCamera },
+    { facingMode: cam },
     { fps: 10, qrbox: 250 },
     (decodedText) => {
 
       let nom = document.getElementById("nom").value;
       let matricule = document.getElementById("matricule").value;
 
+      if (!photoData) {
+        alert("Prends une photo !");
+        return;
+      }
+
       push(ref(db, "presences"), {
         nom,
         matricule,
-        codeQR: decodedText,
-        latitude: userLatitude,
-        longitude: userLongitude,
+        qr: decodedText,
+        latitude: lat,
+        longitude: long,
+        photo: photoData,
         date: new Date().toLocaleString()
       });
 
@@ -135,37 +139,10 @@ window.startScanner = function () {
   );
 };
 
-// 🔄 SWITCH CAM
-window.switchCamera = function () {
-  if (!html5QrCode) {
-    alert("Clique d'abord sur Scanner QR");
-    return;
-  }
-
+window.switchCamera = function() {
   html5QrCode.stop().then(() => {
-    currentCamera = currentCamera === "environment" ? "user" : "environment";
-
-    html5QrCode.start(
-      { facingMode: currentCamera },
-      { fps: 10, qrbox: 250 },
-      (decodedText) => {
-
-        let nom = document.getElementById("nom").value;
-        let matricule = document.getElementById("matricule").value;
-
-        push(ref(db, "presences"), {
-          nom,
-          matricule,
-          codeQR: decodedText,
-          latitude: userLatitude,
-          longitude: userLongitude,
-          date: new Date().toLocaleString()
-        });
-
-        alert("✅ Présence validée !");
-        html5QrCode.stop();
-      }
-    );
+    cam = cam === "environment" ? "user" : "environment";
+    startScanner();
   });
 };
 
