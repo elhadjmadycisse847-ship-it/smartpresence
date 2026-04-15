@@ -1,25 +1,74 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SmartPresence QR</title>
+  <title>SmartPresence PRO</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #f2f2f2;
+    }
+
+    h2 {
+      color: #333;
+    }
+
+    input {
+      padding: 10px;
+      margin: 5px;
+      width: 80%;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    #reader {
+      margin: auto;
+      margin-top: 20px;
+    }
+
+    #liste {
+      background: white;
+      padding: 10px;
+      border-radius: 10px;
+      width: 90%;
+      margin: auto;
+      margin-top: 20px;
+      text-align: left;
+    }
+  </style>
 </head>
+
 <body>
 
-<h2>📌 Scan QR</h2>
+<h2>📌 SmartPresence PRO</h2>
 
-<input type="text" id="nom" placeholder="Nom"><br><br>
-<input type="text" id="matricule" placeholder="Matricule"><br><br>
+<input type="text" id="nom" placeholder="Nom"><br>
+<input type="text" id="matricule" placeholder="Matricule"><br>
 
 <button onclick="startScanner()">📸 Scanner QR</button>
 <button onclick="switchCamera()">🔄 Changer caméra</button>
 
-<div id="reader" style="width:300px; margin-top:20px;"></div>
+<div id="reader" style="width:300px;"></div>
+
+<h3>📋 Liste des présences</h3>
+<ul id="liste"></ul>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
+import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBsFxW7QON1JhWshuwz8EXE9NggQ0fCUMA",
@@ -34,11 +83,27 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 🎯 caméra actuelle
+// 📊 LISTE EN DIRECT
+const liste = document.getElementById("liste");
+
+onValue(ref(db, "presences"), (snapshot) => {
+  liste.innerHTML = "";
+
+  snapshot.forEach((child) => {
+    const data = child.val();
+
+    let li = document.createElement("li");
+    li.textContent = data.nom + " (" + data.matricule + ") - " + data.date;
+
+    liste.appendChild(li);
+  });
+});
+
+// 📸 CAMERA
 let currentCamera = "environment";
 let html5QrCode;
 
-// ▶️ START SCAN
+// ▶️ SCAN
 window.startScanner = function () {
   html5QrCode = new Html5Qrcode("reader");
 
@@ -46,6 +111,7 @@ window.startScanner = function () {
     { facingMode: currentCamera },
     { fps: 10, qrbox: 250 },
     (decodedText) => {
+
       let nom = document.getElementById("nom").value;
       let matricule = document.getElementById("matricule").value;
 
@@ -58,12 +124,11 @@ window.startScanner = function () {
 
       alert("✅ Présence validée !");
       html5QrCode.stop();
-    },
-    (error) => {}
+    }
   );
 };
 
-// 🔄 SWITCH CAMÉRA
+// 🔄 SWITCH CAM
 window.switchCamera = function () {
   if (!html5QrCode) {
     alert("Clique d'abord sur Scanner QR");
@@ -77,6 +142,7 @@ window.switchCamera = function () {
       { facingMode: currentCamera },
       { fps: 10, qrbox: 250 },
       (decodedText) => {
+
         let nom = document.getElementById("nom").value;
         let matricule = document.getElementById("matricule").value;
 
