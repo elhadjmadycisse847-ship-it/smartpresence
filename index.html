@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SmartPresence QR</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+
+<h2>📌 Scan QR</h2>
+
+<input type="text" id="nom" placeholder="Nom"><br><br>
+<input type="text" id="matricule" placeholder="Matricule"><br><br>
+
+<button onclick="startScanner()">📸 Scanner QR</button>
+
+<div id="reader" style="width:300px; margin-top:20px;"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBsFxW7QON1JhWshuwz8EXE9NggQ0fCUMA",
+  authDomain: "smartpresence-ff489.firebaseapp.com",
+  databaseURL: "https://smartpresence-ff489-default-rtdb.firebaseio.com",
+  projectId: "smartpresence-ff489",
+  storageBucket: "smartpresence-ff489.firebasestorage.app",
+  messagingSenderId: "676917669187",
+  appId: "1:676917669187:web:d825c0b3ff3ee0944c13f6"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+window.startScanner = function() {
+  const html5QrCode = new Html5Qrcode("reader");
+
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    (decodedText) => {
+      let nom = document.getElementById("nom").value;
+      let matricule = document.getElementById("matricule").value;
+
+      push(ref(db, "presences"), {
+        nom,
+        matricule,
+        codeQR: decodedText,
+        date: new Date().toLocaleString()
+      });
+
+      alert("✅ Présence validée !");
+      html5QrCode.stop();
+    },
+    (error) => {}
+  );
+};
+</script>
+
+</body>
+</html>
