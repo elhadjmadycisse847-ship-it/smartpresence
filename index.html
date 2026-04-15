@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SmartPresence PRO</title>
+  <title>SmartPresence ULTRA PRO</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
@@ -9,10 +9,6 @@
       font-family: Arial;
       text-align: center;
       background: #f2f2f2;
-    }
-
-    h2 {
-      color: #333;
     }
 
     input {
@@ -24,13 +20,12 @@
     }
 
     button {
-      padding: 10px 20px;
+      padding: 10px;
       margin: 5px;
-      border: none;
       border-radius: 8px;
-      background: #007bff;
+      border: none;
+      background: blue;
       color: white;
-      cursor: pointer;
     }
 
     #reader {
@@ -41,10 +36,11 @@
     #liste {
       background: white;
       padding: 10px;
+      margin-top: 20px;
       border-radius: 10px;
       width: 90%;
-      margin: auto;
-      margin-top: 20px;
+      margin-left: auto;
+      margin-right: auto;
       text-align: left;
     }
   </style>
@@ -52,7 +48,7 @@
 
 <body>
 
-<h2>📌 SmartPresence PRO</h2>
+<h2>📌 SmartPresence ULTRA PRO</h2>
 
 <input type="text" id="nom" placeholder="Nom"><br>
 <input type="text" id="matricule" placeholder="Matricule"><br>
@@ -83,7 +79,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 📊 LISTE EN DIRECT
+// 📍 GPS
+let userLatitude;
+let userLongitude;
+
+navigator.geolocation.getCurrentPosition((position) => {
+  userLatitude = position.coords.latitude;
+  userLongitude = position.coords.longitude;
+});
+
+// 📊 LISTE
 const liste = document.getElementById("liste");
 
 onValue(ref(db, "presences"), (snapshot) => {
@@ -119,6 +124,8 @@ window.startScanner = function () {
         nom,
         matricule,
         codeQR: decodedText,
+        latitude: userLatitude,
+        longitude: userLongitude,
         date: new Date().toLocaleString()
       });
 
@@ -150,6 +157,8 @@ window.switchCamera = function () {
           nom,
           matricule,
           codeQR: decodedText,
+          latitude: userLatitude,
+          longitude: userLongitude,
           date: new Date().toLocaleString()
         });
 
