@@ -36,7 +36,7 @@ window.startScanner = function() {
   const html5QrCode = new Html5Qrcode("reader");
 
   html5QrCode.start(
-    { facingMode: "environment" },
+    { facingMode: "user" },
     { fps: 10, qrbox: 250 },
     (decodedText) => {
       let nom = document.getElementById("nom").value;
