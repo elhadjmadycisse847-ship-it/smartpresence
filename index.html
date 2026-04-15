@@ -1,49 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SmartPresence ULTIME</title>
+  <title>SmartPresence ULTIME MAX</title>
+
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
   <style>
-    body { font-family: Arial; text-align: center; background: #f2f2f2; }
+    body { font-family: Arial; text-align: center; background:#f2f2f2; }
 
-    input { padding: 10px; margin: 5px; width: 80%; border-radius: 8px; }
+    button { padding:10px; margin:5px; border-radius:8px; background:blue; color:white; }
 
-    button { padding: 10px; margin: 5px; border-radius: 8px; background: blue; color: white; }
+    #liste { background:white; padding:10px; margin-top:20px; border-radius:10px; }
 
-    video, canvas { width: 300px; margin-top: 10px; }
-
-    #liste {
-      background: white;
-      padding: 10px;
-      margin-top: 20px;
-      border-radius: 10px;
-      width: 90%;
-      margin: auto;
-      text-align: left;
-    }
+    table { width:100%; margin-top:20px; border-collapse: collapse; }
+    td, th { border:1px solid #ccc; padding:8px; }
   </style>
 </head>
 
 <body>
 
-<h2>📌 SmartPresence ULTIME</h2>
+<h2>🚀 SmartPresence MAX</h2>
 
-<input type="text" id="nom" placeholder="Nom"><br>
-<input type="text" id="matricule" placeholder="Matricule"><br>
+<input id="nom" placeholder="Nom"><br>
+<input id="matricule" placeholder="Matricule"><br>
 
-<button onclick="startScanner()">📸 Scanner QR</button>
-<button onclick="switchCamera()">🔄 Caméra</button>
+<button onclick="startScanner()">📸 Scanner</button>
+
+<h3>🔁 QR Prof</h3>
+<canvas id="qr"></canvas>
+
+<h3>📊 Présences</h3>
+<table id="table">
+<tr><th>Nom</th><th>Matricule</th><th>Date</th></tr>
+</table>
+
+<button onclick="exportExcel()">📥 Export Excel</button>
 
 <div id="reader"></div>
-
-<h3>📸 Photo</h3>
-<video id="video" autoplay></video><br>
-<button onclick="prendrePhoto()">📸 Prendre photo</button>
-<canvas id="canvas" style="display:none;"></canvas>
-
-<h3>📋 Liste</h3>
-<ul id="liste"></ul>
 
 <script type="module">
 
@@ -63,87 +57,86 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// GPS
-let lat, long;
-navigator.geolocation.getCurrentPosition(pos => {
-  lat = pos.coords.latitude;
-  long = pos.coords.longitude;
-});
+// 🔁 QR DYNAMIQUE
+let currentQR = "";
 
-// PHOTO
-let photoData = "";
+function generateQR() {
+  currentQR = "PRESENCE-" + Date.now();
 
-navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-  document.getElementById("video").srcObject = stream;
-});
+  QRCode.toCanvas(document.getElementById("qr"), currentQR);
+}
 
-window.prendrePhoto = function() {
-  const canvas = document.getElementById("canvas");
-  const video = document.getElementById("video");
+setInterval(generateQR, 30000);
+generateQR();
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
-  canvas.getContext("2d").drawImage(video, 0, 0);
-  photoData = canvas.toDataURL("image/png");
-
-  alert("📸 Photo capturée !");
-};
-
-// LISTE
-const liste = document.getElementById("liste");
-
-onValue(ref(db, "presences"), snapshot => {
-  liste.innerHTML = "";
-  snapshot.forEach(child => {
-    const data = child.val();
-    let li = document.createElement("li");
-    li.textContent = data.nom + " - " + data.date;
-    liste.appendChild(li);
-  });
-});
-
-// QR
+// 📸 SCAN
 let html5QrCode;
-let cam = "environment";
 
 window.startScanner = function() {
   html5QrCode = new Html5Qrcode("reader");
 
   html5QrCode.start(
-    { facingMode: cam },
-    { fps: 10, qrbox: 250 },
+    { facingMode: "environment" },
+    { fps: 10 },
     (decodedText) => {
+
+      if (decodedText !== currentQR) {
+        alert("❌ QR invalide !");
+        return;
+      }
 
       let nom = document.getElementById("nom").value;
       let matricule = document.getElementById("matricule").value;
 
-      if (!photoData) {
-        alert("Prends une photo !");
-        return;
-      }
-
       push(ref(db, "presences"), {
         nom,
         matricule,
-        qr: decodedText,
-        latitude: lat,
-        longitude: long,
-        photo: photoData,
         date: new Date().toLocaleString()
       });
 
-      alert("✅ Présence validée !");
+      alert("✅ Présence OK");
       html5QrCode.stop();
     }
   );
 };
 
-window.switchCamera = function() {
-  html5QrCode.stop().then(() => {
-    cam = cam === "environment" ? "user" : "environment";
-    startScanner();
+// 📊 TABLEAU
+const table = document.getElementById("table");
+
+onValue(ref(db, "presences"), snapshot => {
+  table.innerHTML = "<tr><th>Nom</th><th>Matricule</th><th>Date</th></tr>";
+
+  snapshot.forEach(child => {
+    let data = child.val();
+
+    let row = table.insertRow();
+    row.insertCell(0).innerText = data.nom;
+    row.insertCell(1).innerText = data.matricule;
+    row.insertCell(2).innerText = data.date;
   });
+});
+
+// 📥 EXPORT EXCEL
+window.exportExcel = function() {
+
+  let csv = "Nom,Matricule,Date\n";
+
+  const rows = table.querySelectorAll("tr");
+
+  rows.forEach((row, i) => {
+    if (i === 0) return;
+
+    const cols = row.querySelectorAll("td");
+    csv += `${cols[0].innerText},${cols[1].innerText},${cols[2].innerText}\n`;
+  });
+
+  let blob = new Blob([csv], { type: "text/csv" });
+  let url = URL.createObjectURL(blob);
+
+  let a = document.createElement("a");
+  a.href = url;
+  a.download = "presences.csv";
+  a.click();
 };
 
 </script>
