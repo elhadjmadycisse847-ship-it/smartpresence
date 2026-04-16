@@ -35,19 +35,12 @@
       margin-bottom: 20px;
     }
 
-    h2 {
-      margin-top: 0;
-      font-size: 18px;
-      color: #333;
-    }
-
     input {
       width: 100%;
       padding: 12px;
       margin-top: 10px;
       border-radius: 8px;
       border: 1px solid #ccc;
-      font-size: 14px;
     }
 
     button {
@@ -59,7 +52,6 @@
       background: #1e90ff;
       color: white;
       font-weight: bold;
-      font-size: 15px;
       cursor: pointer;
     }
 
@@ -72,14 +64,14 @@
     }
 
     ul {
-      padding: 0;
       list-style: none;
+      padding: 0;
     }
 
     li {
       background: #eef3f7;
-      margin: 5px 0;
       padding: 10px;
+      margin: 5px 0;
       border-radius: 8px;
     }
   </style>
@@ -93,19 +85,28 @@
 
 <div class="container">
 
+  <!-- LOGIN ADMIN -->
   <div class="card">
-    <h2>Informations étudiant</h2>
+    <h3>🔐 Accès Admin</h3>
+    <input type="password" id="password" placeholder="Mot de passe">
+    <button onclick="login()">Se connecter</button>
+  </div>
 
-    <input type="text" id="nom" placeholder="Nom complet">
+  <!-- PARTIE ETUDIANT -->
+  <div class="card">
+    <h3>👨‍🎓 Étudiant</h3>
+
+    <input type="text" id="nom" placeholder="Nom">
     <input type="text" id="matricule" placeholder="Matricule">
 
-    <button onclick="startScanner()">📸 Scanner le QR</button>
+    <button onclick="startScanner()">📸 Scanner QR</button>
 
     <div id="reader"></div>
   </div>
 
-  <div class="card">
-    <h2>📋 Présences enregistrées</h2>
+  <!-- PARTIE ADMIN (CACHÉE) -->
+  <div class="card" id="adminPanel" style="display:none;">
+    <h3>📋 Liste des présences</h3>
     <ul id="liste"></ul>
   </div>
 
@@ -129,7 +130,19 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 📋 LISTE EN DIRECT
+// 🔐 LOGIN
+window.login = function() {
+  let pass = document.getElementById("password").value;
+
+  if (pass === "admin123") {
+    document.getElementById("adminPanel").style.display = "block";
+    alert("Connexion réussie !");
+  } else {
+    alert("Mot de passe incorrect");
+  }
+};
+
+// 📋 LISTE
 const liste = document.getElementById("liste");
 
 onValue(ref(db, "presences"), (snapshot) => {
