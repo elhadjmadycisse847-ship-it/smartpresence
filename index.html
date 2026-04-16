@@ -53,7 +53,7 @@ function startScanner() {
   html5QrCode = new Html5Qrcode("reader");
 
   html5QrCode.start(
-    { facingMode: "environment" },
+    { facingMode: "user" },
     { fps: 10, qrbox: 250 },
     (decodedText) => {
       alert("QR détecté: " + decodedText);
