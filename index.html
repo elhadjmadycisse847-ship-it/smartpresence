@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SmartPresence MAX</title>
+  <title>ISEP SmartPresence</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -9,78 +9,77 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial;
-      background: black;
-      color: #00ffcc;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: white;
       text-align: center;
-    }
-
-    /* BACKGROUND HACKER */
-    body::before {
-      content: "";
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      background: url("https://i.imgur.com/8QfQZ4V.gif");
-      opacity: 0.2;
-      z-index: -1;
     }
 
     h1 {
-      color: #00ffcc;
       margin-top: 20px;
-      text-shadow: 0 0 10px #00ffcc;
+      font-size: 26px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      padding: 20px;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
 
     input {
+      width: 90%;
       padding: 12px;
-      margin: 8px;
-      border-radius: 10px;
-      border: none;
-      width: 250px;
-      text-align: center;
-    }
-
-    button {
-      padding: 12px 20px;
       margin: 10px;
       border-radius: 10px;
       border: none;
-      background: #00ffcc;
-      color: black;
+      outline: none;
+      font-size: 14px;
+    }
+
+    button {
+      width: 90%;
+      padding: 12px;
+      margin: 10px;
+      border-radius: 10px;
+      border: none;
+      background: #00c6ff;
+      color: white;
       font-weight: bold;
       cursor: pointer;
       transition: 0.3s;
     }
 
     button:hover {
-      background: #00cc99;
-      transform: scale(1.05);
+      background: #0072ff;
     }
 
     #reader {
       margin-top: 20px;
     }
 
+    canvas {
+      margin-top: 10px;
+    }
+
     table {
-      width: 90%;
+      width: 95%;
       margin: auto;
       margin-top: 20px;
       border-collapse: collapse;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.4);
     }
 
     th, td {
-      border: 1px solid #00ffcc;
       padding: 10px;
+      border: 1px solid #ccc;
     }
 
     th {
-      background: #003333;
-    }
-
-    #qr {
-      margin-top: 10px;
+      background: #0072ff;
     }
 
   </style>
@@ -88,23 +87,31 @@
 
 <body>
 
-<h1>💻 ISEP DIAMNIADIO - SmartPresence</h1>
+<h1>🎓 ISEP DIAMNIADIO</h1>
 
-<input id="nom" placeholder="Nom"><br>
-<input id="matricule" placeholder="Matricule"><br>
+<div class="card">
 
-<button onclick="startScanner()">📸 Scanner QR</button>
+  <input id="nom" placeholder="Entrer votre nom">
+  <input id="matricule" placeholder="Entrer votre matricule">
 
-<h3>🔁 QR Prof</h3>
-<canvas id="qr"></canvas>
+  <button onclick="startScanner()">📸 Scanner QR</button>
 
-<h3>📊 Présences</h3>
+</div>
 
-<table id="table">
-<tr><th>Nom</th><th>Matricule</th><th>Date</th></tr>
-</table>
+<div class="card">
+  <h3>🔁 QR Prof</h3>
+  <canvas id="qr"></canvas>
+</div>
 
-<button onclick="exportExcel()">📥 Export Excel</button>
+<div class="card">
+  <h3>📊 Présences</h3>
+
+  <table id="table">
+    <tr><th>Nom</th><th>Matricule</th><th>Date</th></tr>
+  </table>
+
+  <button onclick="exportExcel()">📥 Télécharger Excel</button>
+</div>
 
 <div id="reader"></div>
 
@@ -137,36 +144,56 @@ function generateQR() {
 setInterval(generateQR, 30000);
 generateQR();
 
-// Scanner
+// Scanner FIX
+let scannerRunning = false;
 let html5QrCode;
 
-window.startScanner = function() {
+window.startScanner = async function() {
+
+  if (scannerRunning) {
+    alert("Scanner déjà actif");
+    return;
+  }
 
   html5QrCode = new Html5Qrcode("reader");
 
-  html5QrCode.start(
-    { facingMode: "environment" },
-    { fps: 10 },
-    (decodedText) => {
+  try {
+    await html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      (decodedText) => {
 
-      if (decodedText !== currentQR) {
-        alert("❌ Mauvais QR !");
-        return;
+        if (decodedText !== currentQR) {
+          alert("❌ QR incorrect");
+          return;
+        }
+
+        let nom = document.getElementById("nom").value;
+        let matricule = document.getElementById("matricule").value;
+
+        if (!nom || !matricule) {
+          alert("Remplis les champs !");
+          return;
+        }
+
+        push(ref(db, "presences"), {
+          nom,
+          matricule,
+          date: new Date().toLocaleString()
+        });
+
+        alert("✅ Présence enregistrée");
+
+        html5QrCode.stop();
+        scannerRunning = false;
       }
+    );
 
-      let nom = document.getElementById("nom").value;
-      let matricule = document.getElementById("matricule").value;
+    scannerRunning = true;
 
-      push(ref(db, "presences"), {
-        nom,
-        matricule,
-        date: new Date().toLocaleString()
-      });
-
-      alert("✅ Présence validée !");
-      html5QrCode.stop();
-    }
-  );
+  } catch (err) {
+    alert("Erreur caméra: " + err);
+  }
 };
 
 // Tableau
