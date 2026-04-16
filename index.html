@@ -1,36 +1,105 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SmartPresence ULTIME MAX</title>
+  <title>SmartPresence MAX</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
   <style>
-    body { font-family: Arial; text-align: center; background:#f2f2f2; }
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: black;
+      color: #00ffcc;
+      text-align: center;
+    }
 
-    button { padding:10px; margin:5px; border-radius:8px; background:blue; color:white; }
+    /* BACKGROUND HACKER */
+    body::before {
+      content: "";
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      background: url("https://i.imgur.com/8QfQZ4V.gif");
+      opacity: 0.2;
+      z-index: -1;
+    }
 
-    #liste { background:white; padding:10px; margin-top:20px; border-radius:10px; }
+    h1 {
+      color: #00ffcc;
+      margin-top: 20px;
+      text-shadow: 0 0 10px #00ffcc;
+    }
 
-    table { width:100%; margin-top:20px; border-collapse: collapse; }
-    td, th { border:1px solid #ccc; padding:8px; }
+    input {
+      padding: 12px;
+      margin: 8px;
+      border-radius: 10px;
+      border: none;
+      width: 250px;
+      text-align: center;
+    }
+
+    button {
+      padding: 12px 20px;
+      margin: 10px;
+      border-radius: 10px;
+      border: none;
+      background: #00ffcc;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #00cc99;
+      transform: scale(1.05);
+    }
+
+    #reader {
+      margin-top: 20px;
+    }
+
+    table {
+      width: 90%;
+      margin: auto;
+      margin-top: 20px;
+      border-collapse: collapse;
+      background: rgba(0,0,0,0.8);
+    }
+
+    th, td {
+      border: 1px solid #00ffcc;
+      padding: 10px;
+    }
+
+    th {
+      background: #003333;
+    }
+
+    #qr {
+      margin-top: 10px;
+    }
+
   </style>
 </head>
 
 <body>
 
-<h2>🚀 SmartPresence MAX</h2>
+<h1>💻 ISEP DIAMNIADIO - SmartPresence</h1>
 
 <input id="nom" placeholder="Nom"><br>
 <input id="matricule" placeholder="Matricule"><br>
 
-<button onclick="startScanner()">📸 Scanner</button>
+<button onclick="startScanner()">📸 Scanner QR</button>
 
 <h3>🔁 QR Prof</h3>
 <canvas id="qr"></canvas>
 
 <h3>📊 Présences</h3>
+
 <table id="table">
 <tr><th>Nom</th><th>Matricule</th><th>Date</th></tr>
 </table>
@@ -57,22 +126,22 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 🔁 QR DYNAMIQUE
+// QR dynamique
 let currentQR = "";
 
 function generateQR() {
-  currentQR = "PRESENCE-" + Date.now();
-
+  currentQR = "ISEP-" + Date.now();
   QRCode.toCanvas(document.getElementById("qr"), currentQR);
 }
 
 setInterval(generateQR, 30000);
 generateQR();
 
-// 📸 SCAN
+// Scanner
 let html5QrCode;
 
 window.startScanner = function() {
+
   html5QrCode = new Html5Qrcode("reader");
 
   html5QrCode.start(
@@ -81,7 +150,7 @@ window.startScanner = function() {
     (decodedText) => {
 
       if (decodedText !== currentQR) {
-        alert("❌ QR invalide !");
+        alert("❌ Mauvais QR !");
         return;
       }
 
@@ -94,13 +163,13 @@ window.startScanner = function() {
         date: new Date().toLocaleString()
       });
 
-      alert("✅ Présence OK");
+      alert("✅ Présence validée !");
       html5QrCode.stop();
     }
   );
 };
 
-// 📊 TABLEAU
+// Tableau
 const table = document.getElementById("table");
 
 onValue(ref(db, "presences"), snapshot => {
@@ -116,7 +185,7 @@ onValue(ref(db, "presences"), snapshot => {
   });
 });
 
-// 📥 EXPORT EXCEL
+// Export
 window.exportExcel = function() {
 
   let csv = "Nom,Matricule,Date\n";
