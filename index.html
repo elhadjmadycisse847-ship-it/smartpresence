@@ -143,7 +143,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// LOGIN
+// 🔐 LOGIN
 window.login = function() {
   let pass = document.getElementById("password").value;
 
@@ -155,7 +155,7 @@ window.login = function() {
   }
 };
 
-// LISTE + STATS
+// 📊 LISTE + STATS
 const liste = document.getElementById("liste");
 
 onValue(ref(db, "presences"), (snapshot) => {
@@ -186,7 +186,7 @@ onValue(ref(db, "presences"), (snapshot) => {
 
 });
 
-// SCANNER
+// 📸 SCANNER + ANTI-TRICHE
 let html5QrCode;
 
 window.startScanner = function() {
@@ -202,7 +202,7 @@ window.startScanner = function() {
       html5QrCode.start(
         cameraId,
         { fps: 10, qrbox: 250 },
-        (decodedText) => {
+        async (decodedText) => {
 
           let nom = document.getElementById("nom").value;
           let matricule = document.getElementById("matricule").value;
@@ -212,6 +212,29 @@ window.startScanner = function() {
             return;
           }
 
+          // 🔥 ANTI-TRICHE
+          const snapshot = await new Promise((resolve) => {
+            onValue(ref(db, "presences"), resolve, { onlyOnce: true });
+          });
+
+          let dejaPresent = false;
+          let today = new Date().toLocaleDateString();
+
+          snapshot.forEach(child => {
+            let data = child.val();
+
+            if (data.matricule === matricule && data.date.includes(today)) {
+              dejaPresent = true;
+            }
+          });
+
+          if (dejaPresent) {
+            alert("❌ Déjà scanné aujourd'hui !");
+            html5QrCode.stop();
+            return;
+          }
+
+          // ✅ ENREGISTREMENT
           push(ref(db, "presences"), {
             nom,
             matricule,
