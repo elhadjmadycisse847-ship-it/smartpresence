@@ -70,6 +70,18 @@
     #reader {
       margin-top: 15px;
     }
+
+    ul {
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      background: #eef3f7;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 8px;
+    }
   </style>
 </head>
 
@@ -92,13 +104,51 @@
     <div id="reader"></div>
   </div>
 
+  <div class="card">
+    <h2>📋 Présences enregistrées</h2>
+    <ul id="liste"></ul>
+  </div>
+
 </div>
 
-<script>
+<script type="module">
 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "TA_CLE",
+  authDomain: "TON_PROJET.firebaseapp.com",
+  databaseURL: "https://TON_PROJET-default-rtdb.firebaseio.com",
+  projectId: "TON_PROJET",
+  storageBucket: "TON_PROJET.appspot.com",
+  messagingSenderId: "XXXX",
+  appId: "XXXX"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// 📋 LISTE EN DIRECT
+const liste = document.getElementById("liste");
+
+onValue(ref(db, "presences"), (snapshot) => {
+  liste.innerHTML = "";
+
+  snapshot.forEach((child) => {
+    const data = child.val();
+
+    let li = document.createElement("li");
+    li.textContent = data.nom + " (" + data.matricule + ") - " + data.date;
+
+    liste.appendChild(li);
+  });
+});
+
+// 📸 SCANNER
 let html5QrCode;
 
-function startScanner() {
+window.startScanner = function() {
 
   html5QrCode = new Html5Qrcode("reader");
 
@@ -117,12 +167,18 @@ function startScanner() {
           let matricule = document.getElementById("matricule").value;
 
           if (!nom || !matricule) {
-            alert("Veuillez remplir les informations !");
+            alert("Remplis les champs !");
             return;
           }
 
-          alert("✅ Présence validée\n" + nom);
+          push(ref(db, "presences"), {
+            nom,
+            matricule,
+            qr: decodedText,
+            date: new Date().toLocaleString()
+          });
 
+          alert("✅ Présence enregistrée !");
           html5QrCode.stop();
         }
       );
