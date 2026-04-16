@@ -59,10 +59,6 @@
       background: #0c7cd5;
     }
 
-    #reader {
-      margin-top: 15px;
-    }
-
     ul {
       list-style: none;
       padding: 0;
@@ -73,6 +69,13 @@
       padding: 10px;
       margin: 5px 0;
       border-radius: 8px;
+    }
+
+    .stats {
+      background: #eef3f7;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -85,29 +88,39 @@
 
 <div class="container">
 
-  <!-- LOGIN ADMIN -->
+  <!-- LOGIN -->
   <div class="card">
-    <h3>🔐 Accès Admin</h3>
+    <h3>🔐 Admin</h3>
     <input type="password" id="password" placeholder="Mot de passe">
-    <button onclick="login()">Se connecter</button>
+    <button onclick="login()">Connexion</button>
   </div>
 
-  <!-- PARTIE ETUDIANT -->
+  <!-- ETUDIANT -->
   <div class="card">
     <h3>👨‍🎓 Étudiant</h3>
 
-    <input type="text" id="nom" placeholder="Nom">
-    <input type="text" id="matricule" placeholder="Matricule">
+    <input id="nom" placeholder="Nom">
+    <input id="matricule" placeholder="Matricule">
 
     <button onclick="startScanner()">📸 Scanner QR</button>
 
     <div id="reader"></div>
   </div>
 
-  <!-- PARTIE ADMIN (CACHÉE) -->
+  <!-- ADMIN PANEL -->
   <div class="card" id="adminPanel" style="display:none;">
-    <h3>📋 Liste des présences</h3>
+
+    <h3>📊 Statistiques</h3>
+
+    <div class="stats">
+      Total présences : <span id="total">0</span><br>
+      Étudiants uniques : <span id="unique">0</span><br>
+      Dernière présence : <span id="last">-</span>
+    </div>
+
+    <h3>📋 Liste</h3>
     <ul id="liste"></ul>
+
   </div>
 
 </div>
@@ -130,35 +143,50 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 🔐 LOGIN
+// LOGIN
 window.login = function() {
   let pass = document.getElementById("password").value;
 
   if (pass === "admin123") {
     document.getElementById("adminPanel").style.display = "block";
-    alert("Connexion réussie !");
+    alert("Connexion réussie");
   } else {
     alert("Mot de passe incorrect");
   }
 };
 
-// 📋 LISTE
+// LISTE + STATS
 const liste = document.getElementById("liste");
 
 onValue(ref(db, "presences"), (snapshot) => {
+
   liste.innerHTML = "";
 
+  let total = 0;
+  let uniqueSet = new Set();
+  let lastDate = "";
+
   snapshot.forEach((child) => {
+
     const data = child.val();
+
+    total++;
+    uniqueSet.add(data.matricule);
+    lastDate = data.date;
 
     let li = document.createElement("li");
     li.textContent = data.nom + " (" + data.matricule + ") - " + data.date;
 
     liste.appendChild(li);
   });
+
+  document.getElementById("total").textContent = total;
+  document.getElementById("unique").textContent = uniqueSet.size;
+  document.getElementById("last").textContent = lastDate || "-";
+
 });
 
-// 📸 SCANNER
+// SCANNER
 let html5QrCode;
 
 window.startScanner = function() {
@@ -203,7 +231,7 @@ window.startScanner = function() {
   }).catch(err => {
     alert("Erreur: " + err);
   });
-}
+};
 
 </script>
 
