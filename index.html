@@ -1,69 +1,63 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Test Scanner</title>
-
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <title>SmartPresence SIMPLE</title>
 
   <style>
     body {
-      font-family: Arial;
-      text-align: center;
-      background: #111;
+      background: black;
       color: white;
+      text-align: center;
+      font-family: Arial;
+    }
+
+    input {
+      padding: 10px;
+      margin: 10px;
+      width: 200px;
+      border-radius: 8px;
+      border: none;
     }
 
     button {
-      padding: 15px;
-      margin: 20px;
-      font-size: 16px;
+      padding: 12px;
+      margin: 10px;
       background: green;
       color: white;
       border: none;
       border-radius: 10px;
+      font-size: 16px;
       cursor: pointer;
-    }
-
-    #reader {
-      width: 300px;
-      margin: auto;
     }
   </style>
 </head>
 
 <body>
 
-<h2>📸 TEST SCANNER QR</h2>
+<h1>🎓 ISEP Diamniadio</h1>
 
-<button onclick="startScanner()">Lancer Scanner</button>
+<h2>📋 Marquer présence</h2>
 
-<div id="reader"></div>
+<input type="text" id="nom" placeholder="Nom"><br>
+<input type="text" id="matricule" placeholder="Matricule"><br>
+<input type="text" id="code" placeholder="Code du cours"><br>
+
+<button onclick="valider()">✅ Valider</button>
 
 <script>
+function valider() {
 
-let html5QrCode;
+  let nom = document.getElementById("nom").value;
+  let matricule = document.getElementById("matricule").value;
+  let code = document.getElementById("code").value;
 
-function startScanner() {
-
-  if (html5QrCode) {
-    alert("Scanner déjà lancé");
+  if (!nom || !matricule || !code) {
+    alert("Remplis tout !");
     return;
   }
 
-  html5QrCode = new Html5Qrcode("reader");
-
-  html5QrCode.start(
-    { facingMode: "user" },
-    { fps: 10, qrbox: 250 },
-    (decodedText) => {
-      alert("QR détecté: " + decodedText);
-      html5QrCode.stop();
-      html5QrCode = null;
-    },
-    (error) => {}
-  );
+  alert("Présence enregistrée pour " + nom);
 }
-
 </script>
 
 </body>
