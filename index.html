@@ -1,42 +1,98 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SmartPresence Camera Fix</title>
+  <title>ISEP SmartPresence</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
     body {
-      background: #111;
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f9;
+    }
+
+    header {
+      background: #0a3d62;
       color: white;
+      padding: 15px;
       text-align: center;
-      font-family: Arial;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 400px;
+      margin: auto;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
     }
 
     button {
-      padding: 15px;
-      margin: 20px;
-      font-size: 16px;
-      background: green;
-      color: white;
+      width: 100%;
+      padding: 12px;
+      margin-top: 15px;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
+      background: #1e90ff;
+      color: white;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0c7cd5;
     }
 
     #reader {
-      width: 300px;
-      margin: auto;
+      margin-top: 15px;
     }
   </style>
 </head>
 
 <body>
 
-<h2>📸 Scanner QR (FIX)</h2>
+<header>
+🎓 ISEP DIAMNIADIO - SmartPresence
+</header>
 
-<button onclick="startScanner()">Lancer Scanner</button>
+<div class="container">
 
-<div id="reader"></div>
+  <div class="card">
+    <h2>Informations étudiant</h2>
+
+    <input type="text" id="nom" placeholder="Nom complet">
+    <input type="text" id="matricule" placeholder="Matricule">
+
+    <button onclick="startScanner()">📸 Scanner le QR</button>
+
+    <div id="reader"></div>
+  </div>
+
+</div>
 
 <script>
 
@@ -46,28 +102,37 @@ function startScanner() {
 
   html5QrCode = new Html5Qrcode("reader");
 
-  // 🔥 ON FORCE LISTE CAMÉRAS
   Html5Qrcode.getCameras().then(devices => {
 
-    if (devices && devices.length) {
+    if (devices.length) {
 
-      let cameraId = devices[0].id; // prend la 1ère caméra
+      let cameraId = devices[0].id;
 
       html5QrCode.start(
         cameraId,
         { fps: 10, qrbox: 250 },
         (decodedText) => {
-          alert("QR détecté: " + decodedText);
+
+          let nom = document.getElementById("nom").value;
+          let matricule = document.getElementById("matricule").value;
+
+          if (!nom || !matricule) {
+            alert("Veuillez remplir les informations !");
+            return;
+          }
+
+          alert("✅ Présence validée\n" + nom);
+
           html5QrCode.stop();
         }
       );
 
     } else {
-      alert("❌ Aucune caméra trouvée");
+      alert("Aucune caméra trouvée");
     }
 
   }).catch(err => {
-    alert("Erreur caméra: " + err);
+    alert("Erreur: " + err);
   });
 }
 
