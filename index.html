@@ -1,63 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SmartPresence SIMPLE</title>
+  <title>SmartPresence Camera Fix</title>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
     body {
-      background: black;
+      background: #111;
       color: white;
       text-align: center;
       font-family: Arial;
     }
 
-    input {
-      padding: 10px;
-      margin: 10px;
-      width: 200px;
-      border-radius: 8px;
-      border: none;
-    }
-
     button {
-      padding: 12px;
-      margin: 10px;
+      padding: 15px;
+      margin: 20px;
+      font-size: 16px;
       background: green;
       color: white;
       border: none;
       border-radius: 10px;
-      font-size: 16px;
-      cursor: pointer;
+    }
+
+    #reader {
+      width: 300px;
+      margin: auto;
     }
   </style>
 </head>
 
 <body>
 
-<h1>🎓 ISEP Diamniadio</h1>
+<h2>📸 Scanner QR (FIX)</h2>
 
-<h2>📋 Marquer présence</h2>
+<button onclick="startScanner()">Lancer Scanner</button>
 
-<input type="text" id="nom" placeholder="Nom"><br>
-<input type="text" id="matricule" placeholder="Matricule"><br>
-<input type="text" id="code" placeholder="Code du cours"><br>
-
-<button onclick="valider()">✅ Valider</button>
+<div id="reader"></div>
 
 <script>
-function valider() {
 
-  let nom = document.getElementById("nom").value;
-  let matricule = document.getElementById("matricule").value;
-  let code = document.getElementById("code").value;
+let html5QrCode;
 
-  if (!nom || !matricule || !code) {
-    alert("Remplis tout !");
-    return;
-  }
+function startScanner() {
 
-  alert("Présence enregistrée pour " + nom);
+  html5QrCode = new Html5Qrcode("reader");
+
+  // 🔥 ON FORCE LISTE CAMÉRAS
+  Html5Qrcode.getCameras().then(devices => {
+
+    if (devices && devices.length) {
+
+      let cameraId = devices[0].id; // prend la 1ère caméra
+
+      html5QrCode.start(
+        cameraId,
+        { fps: 10, qrbox: 250 },
+        (decodedText) => {
+          alert("QR détecté: " + decodedText);
+          html5QrCode.stop();
+        }
+      );
+
+    } else {
+      alert("❌ Aucune caméra trouvée");
+    }
+
+  }).catch(err => {
+    alert("Erreur caméra: " + err);
+  });
 }
+
 </script>
 
 </body>
