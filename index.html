@@ -1,239 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ISEP SmartPresence</title>
+  <title>Test Scanner</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
   <style>
     body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      color: white;
+      font-family: Arial;
       text-align: center;
-    }
-
-    h1 {
-      margin-top: 20px;
-      font-size: 26px;
-    }
-
-    .card {
-      background: rgba(255,255,255,0.05);
-      padding: 20px;
-      margin: 20px auto;
-      width: 90%;
-      max-width: 400px;
-      border-radius: 15px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    }
-
-    input {
-      width: 90%;
-      padding: 12px;
-      margin: 10px;
-      border-radius: 10px;
-      border: none;
-      outline: none;
-      font-size: 14px;
+      background: #111;
+      color: white;
     }
 
     button {
-      width: 90%;
-      padding: 12px;
-      margin: 10px;
-      border-radius: 10px;
-      border: none;
-      background: #00c6ff;
+      padding: 15px;
+      margin: 20px;
+      font-size: 16px;
+      background: green;
       color: white;
-      font-weight: bold;
+      border: none;
+      border-radius: 10px;
       cursor: pointer;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      background: #0072ff;
     }
 
     #reader {
-      margin-top: 20px;
-    }
-
-    canvas {
-      margin-top: 10px;
-    }
-
-    table {
-      width: 95%;
+      width: 300px;
       margin: auto;
-      margin-top: 20px;
-      border-collapse: collapse;
-      background: rgba(0,0,0,0.4);
     }
-
-    th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-    }
-
-    th {
-      background: #0072ff;
-    }
-
   </style>
 </head>
 
 <body>
 
-<h1>🎓 ISEP DIAMNIADIO</h1>
+<h2>📸 TEST SCANNER QR</h2>
 
-<div class="card">
-
-  <input id="nom" placeholder="Entrer votre nom">
-  <input id="matricule" placeholder="Entrer votre matricule">
-
-  <button onclick="startScanner()">📸 Scanner QR</button>
-
-</div>
-
-<div class="card">
-  <h3>🔁 QR Prof</h3>
-  <canvas id="qr"></canvas>
-</div>
-
-<div class="card">
-  <h3>📊 Présences</h3>
-
-  <table id="table">
-    <tr><th>Nom</th><th>Matricule</th><th>Date</th></tr>
-  </table>
-
-  <button onclick="exportExcel()">📥 Télécharger Excel</button>
-</div>
+<button onclick="startScanner()">Lancer Scanner</button>
 
 <div id="reader"></div>
 
-<script type="module">
+<script>
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "...",
-  databaseURL: "...",
-  projectId: "...",
-  storageBucket: "...",
-  messagingSenderId: "...",
-  appId: "..."
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// QR dynamique
-let currentQR = "";
-
-function generateQR() {
-  currentQR = "ISEP-" + Date.now();
-  QRCode.toCanvas(document.getElementById("qr"), currentQR);
-}
-
-setInterval(generateQR, 30000);
-generateQR();
-
-// Scanner FIX
-let scannerRunning = false;
 let html5QrCode;
 
-window.startScanner = async function() {
+function startScanner() {
 
-  if (scannerRunning) {
-    alert("Scanner déjà actif");
+  if (html5QrCode) {
+    alert("Scanner déjà lancé");
     return;
   }
 
   html5QrCode = new Html5Qrcode("reader");
 
-  try {
-    await html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      (decodedText) => {
-
-        if (decodedText !== currentQR) {
-          alert("❌ QR incorrect");
-          return;
-        }
-
-        let nom = document.getElementById("nom").value;
-        let matricule = document.getElementById("matricule").value;
-
-        if (!nom || !matricule) {
-          alert("Remplis les champs !");
-          return;
-        }
-
-        push(ref(db, "presences"), {
-          nom,
-          matricule,
-          date: new Date().toLocaleString()
-        });
-
-        alert("✅ Présence enregistrée");
-
-        html5QrCode.stop();
-        scannerRunning = false;
-      }
-    );
-
-    scannerRunning = true;
-
-  } catch (err) {
-    alert("Erreur caméra: " + err);
-  }
-};
-
-// Tableau
-const table = document.getElementById("table");
-
-onValue(ref(db, "presences"), snapshot => {
-  table.innerHTML = "<tr><th>Nom</th><th>Matricule</th><th>Date</th></tr>";
-
-  snapshot.forEach(child => {
-    let data = child.val();
-
-    let row = table.insertRow();
-    row.insertCell(0).innerText = data.nom;
-    row.insertCell(1).innerText = data.matricule;
-    row.insertCell(2).innerText = data.date;
-  });
-});
-
-// Export
-window.exportExcel = function() {
-
-  let csv = "Nom,Matricule,Date\n";
-
-  const rows = table.querySelectorAll("tr");
-
-  rows.forEach((row, i) => {
-    if (i === 0) return;
-
-    const cols = row.querySelectorAll("td");
-    csv += `${cols[0].innerText},${cols[1].innerText},${cols[2].innerText}\n`;
-  });
-
-  let blob = new Blob([csv], { type: "text/csv" });
-  let url = URL.createObjectURL(blob);
-
-  let a = document.createElement("a");
-  a.href = url;
-  a.download = "presences.csv";
-  a.click();
-};
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    (decodedText) => {
+      alert("QR détecté: " + decodedText);
+      html5QrCode.stop();
+      html5QrCode = null;
+    },
+    (error) => {}
+  );
+}
 
 </script>
 
