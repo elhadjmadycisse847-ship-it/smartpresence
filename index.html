@@ -1,170 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ISEP SmartPresence PRO</title>
+  <title>ISEP SmartPresence PRO MAX</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Poppins', sans-serif;
-    }
-
     body {
-      background: radial-gradient(circle at top, #0f2027, #0a0f1c);
+      font-family: 'Poppins';
+      background: #0f2027;
       color: white;
-      min-height: 100vh;
+      margin:0;
     }
 
     header {
-      text-align: center;
-      padding: 30px;
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      box-shadow: 0 0 40px rgba(0,255,255,0.1);
-    }
-
-    header img {
-      width: 70px;
-      margin-bottom: 10px;
-      filter: drop-shadow(0 0 10px #00f7ff);
-    }
-
-    header h1 {
-      font-size: 24px;
-      letter-spacing: 1px;
-    }
-
-    header p {
-      font-size: 13px;
-      opacity: 0.7;
+      text-align:center;
+      padding:20px;
+      background:#1e90ff;
     }
 
     .container {
-      max-width: 420px;
-      margin: auto;
-      padding: 20px;
+      max-width:420px;
+      margin:auto;
+      padding:20px;
     }
 
     .card {
-      background: rgba(255,255,255,0.07);
-      backdrop-filter: blur(20px);
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 20px;
-      border: 1px solid rgba(255,255,255,0.1);
-      box-shadow: 0 0 25px rgba(0,255,255,0.05);
-      transition: 0.3s;
+      background:#203a43;
+      padding:15px;
+      border-radius:15px;
+      margin-bottom:15px;
     }
 
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 0 40px rgba(0,255,255,0.15);
+    input, button {
+      width:100%;
+      padding:10px;
+      margin-top:10px;
+      border-radius:10px;
+      border:none;
     }
 
-    input {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 10px;
-      border: none;
-      outline: none;
-      background: rgba(255,255,255,0.1);
-      color: white;
-    }
+    button { cursor:pointer; }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 12px;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      transition: 0.3s;
-    }
+    .admin { display:none; }
 
-    .scanBtn {
-      background: linear-gradient(135deg,#00f7ff,#00c3ff);
-    }
-
-    .photoBtn {
-      background: linear-gradient(135deg,#00ff94,#00c76a);
-    }
-
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 15px rgba(0,255,255,0.4);
-    }
-
-    video, img {
-      width: 100%;
-      border-radius: 10px;
-      margin-top: 10px;
-    }
-
-    ul {
-      list-style: none;
-    }
-
-    li {
-      background: rgba(255,255,255,0.08);
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 10px;
-      font-size: 13px;
-    }
-
-    canvas {
-      background: white;
-      border-radius: 10px;
-      margin-top: 10px;
-    }
   </style>
 </head>
 
 <body>
 
 <header>
-  <img src="logo.png">
-  <h1>ISEP SmartPresence</h1>
-  <p>Système intelligent de présence</p>
+  <h2>ISEP SmartPresence</h2>
 </header>
 
 <div class="container">
 
+<!-- LOGIN -->
+<div class="card">
+  <h3>🔐 Admin Login</h3>
+  <input id="adminUser" placeholder="Username">
+  <input id="adminPass" type="password" placeholder="Password">
+  <button onclick="login()">Connexion</button>
+</div>
+
+<!-- SCANNER -->
 <div class="card">
   <input id="nom" placeholder="Nom">
   <input id="matricule" placeholder="Matricule">
 
-  <button class="scanBtn" onclick="startScanner()">📸 Scanner QR</button>
+  <button onclick="startScanner()">Scanner QR</button>
   <div id="reader"></div>
 
   <video id="video" autoplay></video>
-
-  <button class="photoBtn" onclick="takePhoto()">📷 Capturer</button>
+  <button onclick="takePhoto()">Capturer</button>
 
   <canvas id="canvas" style="display:none;"></canvas>
-  <img id="preview" />
 </div>
 
-<div class="card">
-  <h3>📊 Statistiques</h3>
-  Total : <span id="total">0</span><br>
-  Uniques : <span id="unique">0</span>
+<!-- ADMIN PANEL -->
+<div class="card admin" id="adminPanel">
+  <h3>📊 Admin Panel</h3>
+  <button onclick="exportExcel()">📥 Export Excel</button>
 
-  <canvas id="chart"></canvas>
-</div>
-
-<div class="card">
-  <h3>📋 Présences</h3>
   <ul id="liste"></ul>
 </div>
 
@@ -174,7 +97,6 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBsFxW7QON1JhWshuwz8EXE9NggQ0fCUMA",
@@ -188,88 +110,106 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const storage = getStorage(app);
 
-let chart;
+let dataList = [];
 
-onValue(ref(db, "presences"), (snapshot) => {
 
-  let liste = document.getElementById("liste");
-  liste.innerHTML = "";
+// 🔐 LOGIN SIMPLE
+window.login = function(){
+  let u = document.getElementById("adminUser").value;
+  let p = document.getElementById("adminPass").value;
 
-  let total = 0;
-  let uniqueSet = new Set();
+  if(u === "admin" && p === "1234"){
+    document.getElementById("adminPanel").style.display = "block";
+    alert("Accès admin !");
+  } else {
+    alert("Erreur login");
+  }
+};
 
-  snapshot.forEach((child) => {
-    let d = child.val();
 
-    total++;
-    uniqueSet.add(d.matricule);
+// 🚨 ANTI TRICHE
+function antiFraude(matricule){
+  let last = localStorage.getItem(matricule);
+
+  if(last){
+    let diff = Date.now() - parseInt(last);
+
+    if(diff < 60000){ // 1 minute
+      alert("⛔ Déjà enregistré !");
+      return false;
+    }
+  }
+
+  localStorage.setItem(matricule, Date.now());
+  return true;
+}
+
+
+// 📊 LISTE
+onValue(ref(db, "presences"), (snapshot)=>{
+  let ul = document.getElementById("liste");
+  ul.innerHTML="";
+  dataList=[];
+
+  snapshot.forEach(c=>{
+    let d = c.val();
+    dataList.push(d);
 
     let li = document.createElement("li");
-    li.innerHTML = `
-      <b>${d.nom}</b><br>
-      ${d.matricule}<br>
-      <img src="${d.photo}">
-    `;
-    liste.appendChild(li);
+    li.innerHTML = d.nom+" - "+d.matricule+" - "+d.date;
+    ul.appendChild(li);
   });
-
-  document.getElementById("total").textContent = total;
-  document.getElementById("unique").textContent = uniqueSet.size;
 });
 
-let html5QrCode;
 
-window.startScanner = function() {
+// 📸 CAMERA
+function startCamera(){
+  navigator.mediaDevices.getUserMedia({video:true})
+  .then(s=>{
+    document.getElementById("video").srcObject = s;
+  });
+}
 
-  html5QrCode = new Html5Qrcode("reader");
 
-  Html5Qrcode.getCameras().then(devices => {
-    html5QrCode.start(
-      devices[0].id,
-      { fps: 10, qrbox: 250 },
-      () => {
-        html5QrCode.stop();
-        startCamera();
-      }
-    );
+// 📸 SCAN
+window.startScanner = function(){
+  let qr = new Html5Qrcode("reader");
+
+  Html5Qrcode.getCameras().then(devices=>{
+    qr.start(devices[0].id,{fps:10,qrbox:250},()=>{
+      qr.stop();
+      startCamera();
+    });
   });
 };
 
-function startCamera() {
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => {
-      document.getElementById("video").srcObject = stream;
-    });
-}
 
-window.takePhoto = async function() {
+// 📸 PHOTO + SAVE
+window.takePhoto = function(){
+  let nom = document.getElementById("nom").value;
+  let matricule = document.getElementById("matricule").value;
 
-  let video = document.getElementById("video");
-  let canvas = document.getElementById("canvas");
+  if(!antiFraude(matricule)) return;
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
-  let ctx = canvas.getContext("2d");
-  ctx.drawImage(video, 0, 0);
-
-  let imageData = canvas.toDataURL("image/png");
-  document.getElementById("preview").src = imageData;
-
-  let fileRef = sRef(storage, "photos/" + Date.now());
-  await uploadString(fileRef, imageData, "data_url");
-  let url = await getDownloadURL(fileRef);
-
-  push(ref(db, "presences"), {
-    nom: document.getElementById("nom").value,
-    matricule: document.getElementById("matricule").value,
-    photo: url,
-    date: new Date().toLocaleString()
+  push(ref(db,"presences"),{
+    nom,
+    matricule,
+    date:new Date().toLocaleString()
   });
 
-  alert("✅ Présence enregistrée !");
+  alert("Présence OK");
+};
+
+
+// 📥 EXPORT EXCEL
+window.exportExcel = function(){
+
+  let ws = XLSX.utils.json_to_sheet(dataList);
+  let wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Présences");
+
+  XLSX.writeFile(wb, "presences.xlsx");
 };
 
 </script>
