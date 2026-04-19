@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ISEP SmartPresence</title>
+  <title>ISEP SmartPresence PRO</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -83,7 +83,7 @@
 <body>
 
 <header>
-🎓 ISEP DIAMNIADIO - SmartPresence
+🎓 ISEP DIAMNIADIO - SmartPresence PRO
 </header>
 
 <div class="container">
@@ -143,10 +143,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 📍 COORDONNÉES ISEP (approx)
-const ISEP_LAT = 14.744;
-const ISEP_LON = -17.531;
-
 // 🔐 LOGIN
 window.login = function() {
   let pass = document.getElementById("password").value;
@@ -195,78 +191,122 @@ let html5QrCode;
 
 window.startScanner = function() {
 
-  navigator.geolocation.getCurrentPosition(async (position) => {
+  let lastScan = localStorage.getItem("lastScan");
+  let now = Date.now();
 
-    let lat = position.coords.latitude;
-    let lon = position.coords.longitude;
+  if (lastScan && (now - lastScan < 60000)) {
+    alert("❌ Attends avant de rescanner !");
+    return;
+  }
 
-    let distance = Math.sqrt(
-      Math.pow(lat - ISEP_LAT, 2) + Math.pow(lon - ISEP_LON, 2)
-    );
+  navigator.geolocation.getCurrentPosition(async (pos1) => {
 
-    if (distance > 0.01) {
-      alert("❌ Vous n'êtes pas à ISEP !");
-      return;
-    }
+    setTimeout(() => {
 
-    html5QrCode = new Html5Qrcode("reader");
+      navigator.geolocation.getCurrentPosition(async (pos2) => {
 
-    Html5Qrcode.getCameras().then(devices => {
+        let lat = pos2.coords.latitude;
+        let lon = pos2.coords.longitude;
 
-      let cameraId = devices[0].id;
+        const ISEP_LAT = 14.745;   // 🔴 remplace avec ta position exacte
+        const ISEP_LON = -17.530;  // 🔴 remplace avec ta position exacte
 
-      html5QrCode.start(
-        cameraId,
-        { fps: 10, qrbox: 250 },
-        async (decodedText) => {
+        function getDistance(lat1, lon1, lat2, lon2) {
+          const R = 6371000;
+          const dLat = (lat2 - lat1) * Math.PI / 180;
+          const dLon = (lon2 - lon1) * Math.PI / 180;
 
-          let nom = document.getElementById("nom").value;
-          let matricule = document.getElementById("matricule").value;
+          const a =
+            Math.sin(dLat/2)**2 +
+            Math.cos(lat1*Math.PI/180) *
+            Math.cos(lat2*Math.PI/180) *
+            Math.sin(dLon/2)**2;
 
-          if (!nom || !matricule) {
-            alert("Remplis les champs !");
-            return;
-          }
-
-          // 🔥 ANTI TRICHE
-          const snapshot = await new Promise((resolve) => {
-            onValue(ref(db, "presences"), resolve, { onlyOnce: true });
-          });
-
-          let dejaPresent = false;
-          let today = new Date().toLocaleDateString();
-
-          snapshot.forEach(child => {
-            let data = child.val();
-
-            if (data.matricule === matricule && data.date.includes(today)) {
-              dejaPresent = true;
-            }
-          });
-
-          if (dejaPresent) {
-            alert("❌ Déjà scanné aujourd'hui !");
-            html5QrCode.stop();
-            return;
-          }
-
-          push(ref(db, "presences"), {
-            nom,
-            matricule,
-            date: new Date().toLocaleString(),
-            latitude: lat,
-            longitude: lon
-          });
-
-          alert("✅ Présence validée !");
-          html5QrCode.stop();
+          return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
-      );
 
-    });
+        let distance = getDistance(lat, lon, ISEP_LAT, ISEP_LON);
+
+        if (distance > 50) {
+          alert("❌ Hors zone !");
+          return;
+        }
+
+        let moveDistance = getDistance(
+          pos1.coords.latitude,
+          pos1.coords.longitude,
+          pos2.coords.latitude,
+          pos2.coords.longitude
+        );
+
+        if (moveDistance < 1) {
+          alert("❌ Position suspecte !");
+          return;
+        }
+
+        html5QrCode = new Html5Qrcode("reader");
+
+        Html5Qrcode.getCameras().then(devices => {
+
+          let cameraId = devices[0].id;
+
+          html5QrCode.start(
+            cameraId,
+            { fps: 10, qrbox: 250 },
+            async (decodedText) => {
+
+              let nom = document.getElementById("nom").value;
+              let matricule = document.getElementById("matricule").value;
+
+              if (!nom || !matricule) {
+                alert("Remplis les champs !");
+                return;
+              }
+
+              // 🔥 anti double scan
+              const snapshot = await new Promise((resolve) => {
+                onValue(ref(db, "presences"), resolve, { onlyOnce: true });
+              });
+
+              let deja = false;
+              let today = new Date().toLocaleDateString();
+
+              snapshot.forEach(child => {
+                let d = child.val();
+                if (d.matricule === matricule && d.date.includes(today)) {
+                  deja = true;
+                }
+              });
+
+              if (deja) {
+                alert("❌ Déjà scanné !");
+                html5QrCode.stop();
+                return;
+              }
+
+              localStorage.setItem("lastScan", Date.now());
+
+              push(ref(db, "presences"), {
+                nom,
+                matricule,
+                date: new Date().toLocaleString(),
+                lat,
+                lon
+              });
+
+              alert("✅ Présence validée !");
+              html5QrCode.stop();
+            }
+          );
+
+        });
+
+      });
+
+    }, 2000);
 
   }, () => {
-    alert("Active la localisation !");
+    alert("Active GPS !");
   });
 };
 
