@@ -3,7 +3,11 @@
 <head>
   <title>ISEP SmartPresence</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 
   <style>
     body {
@@ -11,85 +15,307 @@
       font-family:'Poppins';
       background: radial-gradient(circle at top,#0f2027,#0a0f1c);
       color:white;
-      text-align:center;
     }
 
     header {
-      padding:60px 20px;
+      padding:25px;
+      text-align:center;
+      background:rgba(255,255,255,0.05);
+      backdrop-filter: blur(15px);
     }
 
-    header h1 {
-      font-size:32px;
-    }
-
-    header p {
-      opacity:0.7;
-      margin-top:10px;
-    }
-
-    .btn {
-      display:inline-block;
-      margin:15px;
-      padding:15px 25px;
-      border-radius:12px;
-      text-decoration:none;
-      color:white;
-      font-weight:bold;
-      background:linear-gradient(135deg,#00f7ff,#00c6ff);
-      transition:0.3s;
-    }
-
-    .btn:hover {
-      transform:scale(1.1);
-      box-shadow:0 0 20px #00f7ff;
-    }
-
-    .section {
-      padding:40px 20px;
+    .container {
+      max-width:430px;
+      margin:auto;
+      padding:20px;
     }
 
     .card {
       background:rgba(255,255,255,0.05);
-      margin:10px;
-      padding:20px;
-      border-radius:15px;
+      backdrop-filter: blur(15px);
+      border-radius:20px;
+      padding:18px;
+      margin-bottom:15px;
     }
 
+    input, button {
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border-radius:12px;
+      border:none;
+    }
+
+    button {
+      background:linear-gradient(135deg,#00f7ff,#00c6ff);
+      font-weight:bold;
+      cursor:pointer;
+    }
+
+    video, img {
+      width:100%;
+      border-radius:12px;
+      margin-top:10px;
+    }
+
+    #adminPanel, #loginBox {
+      display:none;
+    }
   </style>
 </head>
 
 <body>
 
 <header>
-  <h1>ISEP SmartPresence</h1>
-  <p>Système intelligent de gestion de présence sécurisé</p>
-
-  <a href="index.html" class="btn">🎓 Accéder à l'application</a>
-  <a href="admin.html" class="btn">📊 Dashboard Admin</a>
+  <h2>ISEP SmartPresence</h2>
 </header>
 
-<div class="section">
-  <h2>🚀 Fonctionnalités</h2>
+<div class="container">
 
-  <div class="card">📸 Scan QR sécurisé</div>
-  <div class="card">📍 Vérification GPS</div>
-  <div class="card">📷 Preuve photo</div>
-  <div class="card">📊 Dashboard temps réel</div>
+<div class="card">
+  <input id="nom" placeholder="Nom">
+  <input id="matricule" placeholder="Matricule">
+
+  <button onclick="startScanner()">Scanner QR</button>
+  <div id="reader"></div>
+
+  <video id="video" autoplay></video>
+  <button onclick="takePhoto()">Valider présence</button>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+  <img id="preview">
 </div>
 
-<div class="section">
-  <h2>💡 Pourquoi ce système ?</h2>
-
-  <p>
-    SmartPresence élimine la triche en combinant plusieurs niveaux de sécurité :
-    QR dynamique, géolocalisation et preuve visuelle.
-  </p>
+<div class="card">
+  <button onclick="openAdmin()">📊 Dashboard Admin</button>
 </div>
 
-<div class="section">
-  <h2>🎓 Projet académique</h2>
-  <p>ISEP Diamniadio – Informatique / Sécurité / Cloud</p>
+<!-- LOGIN -->
+<div id="loginBox" class="card">
+  <h3>🔐 Login Admin</h3>
+  <input id="loginUser" placeholder="Email">
+  <input id="loginPass" type="password" placeholder="Mot de passe">
+  <button onclick="login()">Se connecter</button>
 </div>
+
+<!-- ADMIN -->
+<div id="adminPanel">
+
+<div class="card">
+  <button onclick="exportExcel()">📥 Export Excel</button>
+</div>
+
+<div class="card">
+  Total : <span id="total">0</span>
+  <canvas id="chart"></canvas>
+</div>
+
+<ul id="liste"></ul>
+
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
+import { getStorage, ref as sRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBsFxW7QON1JhWshuwz8EXE9NggQ0fCUMA",
+  authDomain: "smartpresence-ff489.firebaseapp.com",
+  databaseURL: "https://smartpresence-ff489-default-rtdb.firebaseio.com",
+  projectId: "smartpresence-ff489",
+  storageBucket: "smartpresence-ff489.firebasestorage.app",
+  messagingSenderId: "676917669187",
+  appId: "1:676917669187:web:d825c0b3ff3ee0944c13f6"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const storage = getStorage(app);
+
+
+// GPS
+function checkGPS(callback){
+  navigator.geolocation.getCurrentPosition(pos=>{
+    let lat = pos.coords.latitude;
+    let lon = pos.coords.longitude;
+
+    let allowedLat = 14.742;
+    let allowedLon = -17.455;
+
+    let distance = Math.sqrt((lat - allowedLat)**2 + (lon - allowedLon)**2);
+
+    if(distance < 0.01){
+      callback(true);
+    } else {
+      alert("⛔ Hors zone !");
+      callback(false);
+    }
+  });
+}
+
+
+// CAMERA
+function startCamera(){
+  navigator.mediaDevices.getUserMedia({video:true})
+  .then(s=>{
+    document.getElementById("video").srcObject = s;
+  });
+}
+
+
+// SCANNER
+window.startScanner = function(){
+  let qr = new Html5Qrcode("reader");
+
+  Html5Qrcode.getCameras().then(devices=>{
+    qr.start(devices[0].id,{fps:10,qrbox:250},()=>{
+      qr.stop();
+      startCamera();
+    });
+  });
+};
+
+
+// PHOTO + ANTI TRICHE
+window.takePhoto = async function(){
+
+  checkGPS(async (ok)=>{
+
+    if(!ok) return;
+
+    let matricule = document.getElementById("matricule").value;
+
+    let last = localStorage.getItem(matricule);
+
+    if(last && Date.now() - last < 60000){
+      alert("⛔ Déjà enregistré !");
+      return;
+    }
+
+    localStorage.setItem(matricule, Date.now());
+
+    let video = document.getElementById("video");
+    let canvas = document.getElementById("canvas");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    let ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    let imageData = canvas.toDataURL("image/png");
+    document.getElementById("preview").src = imageData;
+
+    let fileRef = sRef(storage, "photos/" + Date.now());
+    await uploadString(fileRef, imageData, "data_url");
+
+    let url = await getDownloadURL(fileRef);
+
+    push(ref(db,"presences"),{
+      nom: document.getElementById("nom").value,
+      matricule: matricule,
+      photo: url,
+      date: new Date().toLocaleString()
+    });
+
+    alert("✅ Présence validée !");
+  });
+
+};
+
+
+// LOGIN
+window.openAdmin = function(){
+
+  let isAuth = localStorage.getItem("admin");
+
+  if(isAuth === "ok"){
+    document.getElementById("adminPanel").style.display = "block";
+  } else {
+    document.getElementById("loginBox").style.display = "block";
+  }
+
+};
+
+window.login = function(){
+
+  let user = document.getElementById("loginUser").value;
+  let pass = document.getElementById("loginPass").value;
+
+  if(user === "admin@isep.sn" && pass === "1234"){
+
+    localStorage.setItem("admin","ok");
+
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("adminPanel").style.display = "block";
+
+  } else {
+    alert("❌ Accès refusé");
+  }
+
+};
+
+
+// DATA
+let dataList = [];
+let chart;
+
+onValue(ref(db,"presences"), (snap)=>{
+
+  let ul = document.getElementById("liste");
+  ul.innerHTML="";
+  dataList=[];
+
+  let total = 0;
+  let days = {};
+
+  snap.forEach(c=>{
+    let d = c.val();
+    dataList.push(d);
+    total++;
+
+    let day = d.date.split(",")[0];
+    days[day] = (days[day] || 0) + 1;
+
+    let li = document.createElement("li");
+    li.innerHTML = `${d.nom} - ${d.matricule}<br><img src="${d.photo}" width="100">`;
+    ul.appendChild(li);
+  });
+
+  document.getElementById("total").textContent = total;
+
+  let labels = Object.keys(days);
+  let values = Object.values(days);
+
+  if(chart) chart.destroy();
+
+  chart = new Chart(document.getElementById("chart"), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Présences",
+        data: values
+      }]
+    }
+  });
+
+});
+
+
+// EXPORT
+window.exportExcel = function(){
+  let ws = XLSX.utils.json_to_sheet(dataList);
+  let wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Présences");
+  XLSX.writeFile(wb, "presences.xlsx");
+};
+
+</script>
 
 </body>
 </html>
