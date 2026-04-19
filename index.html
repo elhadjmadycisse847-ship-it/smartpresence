@@ -38,44 +38,54 @@
       padding: 12px;
       margin-top: 10px;
       border-radius: 8px;
+      border: none;
     }
 
     button {
       background: #1e90ff;
       color: white;
-      border: none;
+      font-weight: bold;
     }
 
-    video, canvas {
+    #photoBtn {
+      background: green;
+      font-size: 16px;
+    }
+
+    video, img {
       width: 100%;
       margin-top: 10px;
       border-radius: 10px;
     }
 
-    img {
-      width: 100%;
-      margin-top: 5px;
-      border-radius: 8px;
-    }
   </style>
 </head>
 
 <body>
 
-<header>🎓 ISEP SmartPresence PRO+</header>
+<header>🎓 ISEP DIAMNIADIO - SmartPresence PRO+</header>
 
 <div class="container">
 
 <div class="card">
+
   <input id="nom" placeholder="Nom">
   <input id="matricule" placeholder="Matricule">
 
   <button onclick="startScanner()">📸 Scanner QR</button>
+
   <div id="reader"></div>
 
   <video id="video" autoplay></video>
-  <button onclick="takePhoto()">📷 Prendre photo</button>
+
+  <button id="photoBtn" onclick="takePhoto()">
+    📸 CLIQUE ICI POUR PRENDRE LA PHOTO
+  </button>
+
   <canvas id="canvas" style="display:none;"></canvas>
+
+  <img id="preview" />
+
 </div>
 
 <div class="card">
@@ -116,7 +126,7 @@ onValue(ref(db, "presences"), (snapshot) => {
 
     let li = document.createElement("li");
     li.innerHTML = `
-      ${d.nom} (${d.matricule}) <br>
+      ${d.nom} (${d.matricule})<br>
       <img src="${d.photo}" />
     `;
 
@@ -143,10 +153,11 @@ window.startScanner = function() {
         startCamera();
       }
     );
+
   });
 };
 
-// 📷 CAMERA PHOTO
+// 📷 ACTIVER CAMERA
 function startCamera() {
   navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
@@ -159,6 +170,7 @@ window.takePhoto = async function() {
 
   let video = document.getElementById("video");
   let canvas = document.getElementById("canvas");
+  let preview = document.getElementById("preview");
 
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
@@ -167,6 +179,9 @@ window.takePhoto = async function() {
   ctx.drawImage(video, 0, 0);
 
   let imageData = canvas.toDataURL("image/png");
+
+  // 👀 aperçu
+  preview.src = imageData;
 
   let fileRef = sRef(storage, "photos/" + Date.now());
 
@@ -184,7 +199,7 @@ window.takePhoto = async function() {
     date: new Date().toLocaleString()
   });
 
-  alert("✅ Présence + photo enregistrées !");
+  alert("✅ Photo + présence enregistrées !");
 };
 
 </script>
