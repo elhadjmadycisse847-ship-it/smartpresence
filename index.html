@@ -82,18 +82,9 @@
 <body>
 
 <header>
-
-  <!-- LOGO PRO -->
   <img src="logo.png">
-
-  <div style="font-size:22px; font-weight:600;">
-    ISEP SmartPresence
-  </div>
-
-  <div style="font-size:14px; opacity:0.9;">
-    Système intelligent de présence
-  </div>
-
+  <div style="font-size:22px; font-weight:600;">ISEP SmartPresence</div>
+  <div style="font-size:14px;">Système intelligent de présence</div>
 </header>
 
 <div class="container">
@@ -135,13 +126,13 @@ import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebas
 import { getStorage, ref as sRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js";
 
 const firebaseConfig = {
-  apiKey: "TA_CLE",
-  authDomain: "TON_PROJET.firebaseapp.com",
-  databaseURL: "https://TON_PROJET-default-rtdb.firebaseio.com",
-  projectId: "TON_PROJET",
-  storageBucket: "TON_PROJET.appspot.com",
-  messagingSenderId: "XXXX",
-  appId: "XXXX"
+  apiKey: "AIzaSyBsFxW7QON1JhWshuwz8EXE9NggQ0fCUMA",
+  authDomain: "smartpresence-ff489.firebaseapp.com",
+  databaseURL: "https://smartpresence-ff489-default-rtdb.firebaseio.com",
+  projectId: "smartpresence-ff489",
+  storageBucket: "smartpresence-ff489.firebasestorage.app",
+  messagingSenderId: "676917669187",
+  appId: "1:676917669187:web:d825c0b3ff3ee0944c13f6"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -204,9 +195,9 @@ let html5QrCode;
 
 window.startScanner = function() {
 
-  html5QrCode = new Html5Qrcode("reader");
+  html5QrCode = new Html5QrCode("reader");
 
-  Html5Qrcode.getCameras().then(devices => {
+  Html5QrCode.getCameras().then(devices => {
     let cameraId = devices[0].id;
 
     html5QrCode.start(
