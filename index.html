@@ -5,57 +5,101 @@
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
   <style>
     body {
       margin: 0;
-      font-family: Arial;
-      background: #f4f6f9;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: white;
     }
 
     header {
-      background: #0a3d62;
-      color: white;
-      padding: 15px;
       text-align: center;
-      font-weight: bold;
+      padding: 20px;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 1px;
     }
 
     .container {
-      max-width: 400px;
+      max-width: 420px;
       margin: auto;
       padding: 20px;
     }
 
     .card {
-      background: white;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
       padding: 20px;
-      border-radius: 12px;
       margin-bottom: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     }
 
-    input, button {
+    input {
       width: 100%;
       padding: 12px;
       margin-top: 10px;
-      border-radius: 8px;
+      border-radius: 10px;
       border: none;
+      outline: none;
+      font-size: 14px;
     }
 
     button {
-      background: #1e90ff;
-      color: white;
+      width: 100%;
+      padding: 12px;
+      margin-top: 15px;
+      border-radius: 10px;
+      border: none;
       font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
     }
 
-    #photoBtn {
-      background: green;
-      font-size: 16px;
+    .scanBtn {
+      background: #00c6ff;
+      color: black;
+    }
+
+    .photoBtn {
+      background: #00ff94;
+      color: black;
+    }
+
+    button:hover {
+      transform: scale(1.05);
     }
 
     video, img {
       width: 100%;
+      border-radius: 12px;
       margin-top: 10px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: rgba(255,255,255,0.1);
+      margin: 8px 0;
+      padding: 10px;
       border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #00ff94;
+      color: black;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      margin-bottom: 10px;
     }
 
   </style>
@@ -63,23 +107,25 @@
 
 <body>
 
-<header>🎓 ISEP DIAMNIADIO - SmartPresence PRO+</header>
+<header>🎓 ISEP SmartPresence PREMIUM</header>
 
 <div class="container">
 
 <div class="card">
 
-  <input id="nom" placeholder="Nom">
+  <div class="badge">Étudiant</div>
+
+  <input id="nom" placeholder="Nom complet">
   <input id="matricule" placeholder="Matricule">
 
-  <button onclick="startScanner()">📸 Scanner QR</button>
+  <button class="scanBtn" onclick="startScanner()">📸 Scanner QR</button>
 
   <div id="reader"></div>
 
   <video id="video" autoplay></video>
 
-  <button id="photoBtn" onclick="takePhoto()">
-    📸 CLIQUE ICI POUR PRENDRE LA PHOTO
+  <button class="photoBtn" onclick="takePhoto()">
+    📷 Capturer la présence
   </button>
 
   <canvas id="canvas" style="display:none;"></canvas>
@@ -89,6 +135,7 @@
 </div>
 
 <div class="card">
+  <div class="badge">Admin</div>
   <h3>📋 Présences</h3>
   <ul id="liste"></ul>
 </div>
@@ -115,7 +162,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const storage = getStorage(app);
 
-// 📋 LISTE
+// LISTE
 const liste = document.getElementById("liste");
 
 onValue(ref(db, "presences"), (snapshot) => {
@@ -126,7 +173,8 @@ onValue(ref(db, "presences"), (snapshot) => {
 
     let li = document.createElement("li");
     li.innerHTML = `
-      ${d.nom} (${d.matricule})<br>
+      <b>${d.nom}</b><br>
+      ${d.matricule}<br>
       <img src="${d.photo}" />
     `;
 
@@ -134,7 +182,7 @@ onValue(ref(db, "presences"), (snapshot) => {
   });
 });
 
-// 📸 SCANNER
+// SCANNER
 let html5QrCode;
 
 window.startScanner = function() {
@@ -157,7 +205,7 @@ window.startScanner = function() {
   });
 };
 
-// 📷 ACTIVER CAMERA
+// CAMERA
 function startCamera() {
   navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
@@ -165,7 +213,7 @@ function startCamera() {
     });
 }
 
-// 📷 PRENDRE PHOTO
+// PHOTO
 window.takePhoto = async function() {
 
   let video = document.getElementById("video");
@@ -179,8 +227,6 @@ window.takePhoto = async function() {
   ctx.drawImage(video, 0, 0);
 
   let imageData = canvas.toDataURL("image/png");
-
-  // 👀 aperçu
   preview.src = imageData;
 
   let fileRef = sRef(storage, "photos/" + Date.now());
@@ -199,7 +245,7 @@ window.takePhoto = async function() {
     date: new Date().toLocaleString()
   });
 
-  alert("✅ Photo + présence enregistrées !");
+  alert("✅ Présence enregistrée !");
 };
 
 </script>
