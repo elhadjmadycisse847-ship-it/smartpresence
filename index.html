@@ -4,6 +4,7 @@
   <title>ISEP SmartPresence PREMIUM</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
@@ -19,17 +20,7 @@
       background: linear-gradient(135deg,#0a3d62,#1e90ff);
       padding:20px;
       text-align:center;
-      border-bottom-left-radius:20px;
-      border-bottom-right-radius:20px;
-      box-shadow:0 5px 15px rgba(0,0,0,0.3);
-    }
-
-    header img {
-      width: 50px;
-    }
-
-    header h2 {
-      margin: 5px 0;
+      border-radius:0 0 20px 20px;
     }
 
     .container {
@@ -44,70 +35,38 @@
       border-radius: 15px;
       padding: 20px;
       margin-bottom: 20px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     }
 
-    input {
+    input, button {
       width: 100%;
       padding: 12px;
       margin-top: 10px;
       border-radius: 10px;
       border: none;
-      outline: none;
     }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 15px;
-      border-radius: 10px;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-
-    .scanBtn {
-      background: #00c6ff;
-      color: black;
-    }
-
-    .photoBtn {
-      background: #00ff94;
-      color: black;
-    }
-
-    button:hover {
-      transform: scale(1.05);
-    }
+    .scanBtn { background:#00c6ff; color:black; }
+    .photoBtn { background:#00ff94; color:black; }
 
     video, img {
       width: 100%;
-      border-radius: 12px;
+      border-radius: 10px;
       margin-top: 10px;
     }
 
-    ul {
-      list-style: none;
-      padding: 0;
-    }
+    ul { list-style:none; padding:0; }
 
     li {
       background: rgba(255,255,255,0.1);
       margin: 8px 0;
       padding: 10px;
       border-radius: 10px;
-      font-size: 14px;
     }
 
-    .badge {
-      background:#00ff94;
-      color:black;
-      padding:5px 10px;
-      border-radius:20px;
-      font-size:12px;
-      display:inline-block;
-      margin-bottom:10px;
+    canvas {
+      background:white;
+      border-radius:10px;
+      margin-top:10px;
     }
   </style>
 </head>
@@ -115,36 +74,35 @@
 <body>
 
 <header>
-  <img src="https://cdn-icons-png.flaticon.com/512/3135/3135755.png">
-  <h2>ISEP SmartPresence</h2>
-  <div style="font-size:13px;">Système intelligent de présence</div>
+  🎓 ISEP SmartPresence PREMIUM
 </header>
 
 <div class="container">
 
 <div class="card">
-  <div class="badge">Étudiant</div>
-
-  <input id="nom" placeholder="Nom complet">
+  <input id="nom" placeholder="Nom">
   <input id="matricule" placeholder="Matricule">
 
   <button class="scanBtn" onclick="startScanner()">📸 Scanner QR</button>
-
   <div id="reader"></div>
 
   <video id="video" autoplay></video>
 
-  <button class="photoBtn" onclick="takePhoto()">
-    📷 Capturer la présence
-  </button>
+  <button class="photoBtn" onclick="takePhoto()">📷 Capturer</button>
 
   <canvas id="canvas" style="display:none;"></canvas>
-
   <img id="preview" />
 </div>
 
 <div class="card">
-  <div class="badge">Admin</div>
+  <h3>📊 Statistiques</h3>
+  Total : <span id="total">0</span><br>
+  Uniques : <span id="unique">0</span>
+
+  <canvas id="chart"></canvas>
+</div>
+
+<div class="card">
   <h3>📋 Présences</h3>
   <ul id="liste"></ul>
 </div>
@@ -171,14 +129,26 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const storage = getStorage(app);
 
-// LISTE
-const liste = document.getElementById("liste");
+let chart;
 
+// 📊 LISTE + STATS
 onValue(ref(db, "presences"), (snapshot) => {
+
+  let liste = document.getElementById("liste");
   liste.innerHTML = "";
+
+  let total = 0;
+  let uniqueSet = new Set();
+  let days = {};
 
   snapshot.forEach((child) => {
     let d = child.val();
+
+    total++;
+    uniqueSet.add(d.matricule);
+
+    let day = d.date.split(",")[0];
+    days[day] = (days[day] || 0) + 1;
 
     let li = document.createElement("li");
     li.innerHTML = `
@@ -186,9 +156,28 @@ onValue(ref(db, "presences"), (snapshot) => {
       ${d.matricule}<br>
       <img src="${d.photo}" />
     `;
-
     liste.appendChild(li);
   });
+
+  document.getElementById("total").textContent = total;
+  document.getElementById("unique").textContent = uniqueSet.size;
+
+  let labels = Object.keys(days);
+  let data = Object.values(days);
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(document.getElementById("chart"), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Présences',
+        data: data
+      }]
+    }
+  });
+
 });
 
 // SCANNER
@@ -199,7 +188,6 @@ window.startScanner = function() {
   html5QrCode = new Html5Qrcode("reader");
 
   Html5Qrcode.getCameras().then(devices => {
-
     let cameraId = devices[0].id;
 
     html5QrCode.start(
@@ -210,7 +198,6 @@ window.startScanner = function() {
         startCamera();
       }
     );
-
   });
 };
 
@@ -239,9 +226,7 @@ window.takePhoto = async function() {
   preview.src = imageData;
 
   let fileRef = sRef(storage, "photos/" + Date.now());
-
   await uploadString(fileRef, imageData, "data_url");
-
   let url = await getDownloadURL(fileRef);
 
   let nom = document.getElementById("nom").value;
