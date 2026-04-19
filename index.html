@@ -1,27 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ISEP SmartPresence ULTRA FINAL</title>
+  <title>ISEP SmartPresence FINAL</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
   <style>
     body {
-      font-family: Arial;
+      font-family: 'Poppins';
       background:#0a0f1c;
       color:white;
-      text-align:center;
+      margin:0;
     }
 
-    .box {
-      margin:20px;
-      padding:15px;
+    header {
+      text-align:center;
+      padding:20px;
+      background:#111;
+    }
+
+    .container {
+      max-width:420px;
+      margin:auto;
+      padding:20px;
+    }
+
+    .card {
       background:#1c1f2b;
+      padding:15px;
       border-radius:15px;
+      margin-bottom:15px;
     }
 
     input, button {
-      width:90%;
+      width:100%;
       padding:10px;
       margin-top:10px;
       border-radius:10px;
@@ -31,22 +45,27 @@
     button {
       background:#00c6ff;
       font-weight:bold;
+      cursor:pointer;
     }
 
-    video { width:90%; margin-top:10px; }
+    video, img {
+      width:100%;
+      margin-top:10px;
+      border-radius:10px;
+    }
+
   </style>
 </head>
 
 <body>
 
-<h2>ISEP SmartPresence ULTRA</h2>
+<header>
+  <h2>ISEP SmartPresence FINAL</h2>
+</header>
 
-<div class="box">
-  <h3>QR ACTUEL</h3>
-  <h1 id="qrCode"></h1>
-</div>
+<div class="container">
 
-<div class="box">
+<div class="card">
   <input id="nom" placeholder="Nom">
   <input id="matricule" placeholder="Matricule">
 
@@ -54,9 +73,12 @@
   <div id="reader"></div>
 
   <video id="video" autoplay></video>
-  <button onclick="takePhoto()">Valider présence</button>
+  <button onclick="takePhoto()">Capturer présence</button>
 
   <canvas id="canvas" style="display:none;"></canvas>
+  <img id="preview">
+</div>
+
 </div>
 
 <script type="module">
@@ -78,16 +100,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const storage = getStorage(app);
-
-
-// 🔄 QR DYNAMIQUE (change toutes les 30 sec)
-function generateQR(){
-  let time = Math.floor(Date.now() / 30000);
-  document.getElementById("qrCode").innerText = "ISEP-"+time;
-}
-
-setInterval(generateQR, 1000);
-generateQR();
 
 
 // 📍 GPS CHECK
@@ -126,16 +138,13 @@ function startCamera(){
 }
 
 
-// 📸 SCAN
-let scannedCode = null;
-
+// 📸 SCANNER
 window.startScanner = function(){
 
   let qr = new Html5Qrcode("reader");
 
   Html5Qrcode.getCameras().then(devices=>{
-    qr.start(devices[0].id,{fps:10,qrbox:250},(text)=>{
-      scannedCode = text;
+    qr.start(devices[0].id,{fps:10,qrbox:250},()=>{
       qr.stop();
       startCamera();
     });
@@ -143,19 +152,12 @@ window.startScanner = function(){
 };
 
 
-// 📸 VALIDATION
+// 📸 PHOTO + SAVE
 window.takePhoto = async function(){
 
   checkGPS(async (ok)=>{
 
     if(!ok) return;
-
-    let currentQR = "ISEP-"+Math.floor(Date.now()/30000);
-
-    if(scannedCode !== currentQR){
-      alert("⛔ QR expiré !");
-      return;
-    }
 
     let video = document.getElementById("video");
     let canvas = document.getElementById("canvas");
@@ -167,6 +169,7 @@ window.takePhoto = async function(){
     ctx.drawImage(video, 0, 0);
 
     let imageData = canvas.toDataURL("image/png");
+    document.getElementById("preview").src = imageData;
 
     let fileRef = sRef(storage, "photos/" + Date.now());
     await uploadString(fileRef, imageData, "data_url");
@@ -177,11 +180,10 @@ window.takePhoto = async function(){
       nom: document.getElementById("nom").value,
       matricule: document.getElementById("matricule").value,
       photo: url,
-      qr: scannedCode,
       date: new Date().toLocaleString()
     });
 
-    alert("✅ Présence VALIDÉE !");
+    alert("✅ Présence validée !");
   });
 
 };
