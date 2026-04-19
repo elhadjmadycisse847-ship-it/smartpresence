@@ -1,28 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ISEP SmartPresence PRO MAX</title>
+  <title>ISEP SmartPresence FINAL</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Excel -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
   <style>
     body {
       font-family: 'Poppins';
-      background: #0f2027;
-      color: white;
+      background:#0a0f1c;
+      color:white;
       margin:0;
     }
 
     header {
       text-align:center;
       padding:20px;
-      background:#1e90ff;
+      background:#111;
     }
 
     .container {
@@ -32,7 +28,7 @@
     }
 
     .card {
-      background:#203a43;
+      background:#1c1f2b;
       padding:15px;
       border-radius:15px;
       margin-bottom:15px;
@@ -46,9 +42,17 @@
       border:none;
     }
 
-    button { cursor:pointer; }
+    button {
+      background:#00c6ff;
+      font-weight:bold;
+      cursor:pointer;
+    }
 
-    .admin { display:none; }
+    video, img {
+      width:100%;
+      margin-top:10px;
+      border-radius:10px;
+    }
 
   </style>
 </head>
@@ -56,20 +60,11 @@
 <body>
 
 <header>
-  <h2>ISEP SmartPresence</h2>
+  <h2>ISEP SmartPresence FINAL</h2>
 </header>
 
 <div class="container">
 
-<!-- LOGIN -->
-<div class="card">
-  <h3>🔐 Admin Login</h3>
-  <input id="adminUser" placeholder="Username">
-  <input id="adminPass" type="password" placeholder="Password">
-  <button onclick="login()">Connexion</button>
-</div>
-
-<!-- SCANNER -->
 <div class="card">
   <input id="nom" placeholder="Nom">
   <input id="matricule" placeholder="Matricule">
@@ -78,17 +73,10 @@
   <div id="reader"></div>
 
   <video id="video" autoplay></video>
-  <button onclick="takePhoto()">Capturer</button>
+  <button onclick="takePhoto()">Capturer présence</button>
 
   <canvas id="canvas" style="display:none;"></canvas>
-</div>
-
-<!-- ADMIN PANEL -->
-<div class="card admin" id="adminPanel">
-  <h3>📊 Admin Panel</h3>
-  <button onclick="exportExcel()">📥 Export Excel</button>
-
-  <ul id="liste"></ul>
+  <img id="preview">
 </div>
 
 </div>
@@ -96,7 +84,8 @@
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
+import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
+import { getStorage, ref as sRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBsFxW7QON1JhWshuwz8EXE9NggQ0fCUMA",
@@ -110,57 +99,34 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
-let dataList = [];
-
-
-// 🔐 LOGIN SIMPLE
-window.login = function(){
-  let u = document.getElementById("adminUser").value;
-  let p = document.getElementById("adminPass").value;
-
-  if(u === "admin" && p === "1234"){
-    document.getElementById("adminPanel").style.display = "block";
-    alert("Accès admin !");
-  } else {
-    alert("Erreur login");
-  }
-};
+const storage = getStorage(app);
 
 
-// 🚨 ANTI TRICHE
-function antiFraude(matricule){
-  let last = localStorage.getItem(matricule);
+// 📍 GPS CHECK
+function checkGPS(callback){
 
-  if(last){
-    let diff = Date.now() - parseInt(last);
+  navigator.geolocation.getCurrentPosition(pos=>{
 
-    if(diff < 60000){ // 1 minute
-      alert("⛔ Déjà enregistré !");
-      return false;
+    let lat = pos.coords.latitude;
+    let lon = pos.coords.longitude;
+
+    let allowedLat = 14.742;
+    let allowedLon = -17.455;
+
+    let distance = Math.sqrt(
+      (lat - allowedLat) ** 2 +
+      (lon - allowedLon) ** 2
+    );
+
+    if(distance < 0.01){
+      callback(true);
+    } else {
+      alert("⛔ Hors zone !");
+      callback(false);
     }
-  }
 
-  localStorage.setItem(matricule, Date.now());
-  return true;
-}
-
-
-// 📊 LISTE
-onValue(ref(db, "presences"), (snapshot)=>{
-  let ul = document.getElementById("liste");
-  ul.innerHTML="";
-  dataList=[];
-
-  snapshot.forEach(c=>{
-    let d = c.val();
-    dataList.push(d);
-
-    let li = document.createElement("li");
-    li.innerHTML = d.nom+" - "+d.matricule+" - "+d.date;
-    ul.appendChild(li);
   });
-});
+}
 
 
 // 📸 CAMERA
@@ -172,8 +138,9 @@ function startCamera(){
 }
 
 
-// 📸 SCAN
+// 📸 SCANNER
 window.startScanner = function(){
+
   let qr = new Html5Qrcode("reader");
 
   Html5Qrcode.getCameras().then(devices=>{
@@ -186,30 +153,39 @@ window.startScanner = function(){
 
 
 // 📸 PHOTO + SAVE
-window.takePhoto = function(){
-  let nom = document.getElementById("nom").value;
-  let matricule = document.getElementById("matricule").value;
+window.takePhoto = async function(){
 
-  if(!antiFraude(matricule)) return;
+  checkGPS(async (ok)=>{
 
-  push(ref(db,"presences"),{
-    nom,
-    matricule,
-    date:new Date().toLocaleString()
+    if(!ok) return;
+
+    let video = document.getElementById("video");
+    let canvas = document.getElementById("canvas");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    let ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    let imageData = canvas.toDataURL("image/png");
+    document.getElementById("preview").src = imageData;
+
+    let fileRef = sRef(storage, "photos/" + Date.now());
+    await uploadString(fileRef, imageData, "data_url");
+
+    let url = await getDownloadURL(fileRef);
+
+    push(ref(db,"presences"),{
+      nom: document.getElementById("nom").value,
+      matricule: document.getElementById("matricule").value,
+      photo: url,
+      date: new Date().toLocaleString()
+    });
+
+    alert("✅ Présence validée !");
   });
 
-  alert("Présence OK");
-};
-
-
-// 📥 EXPORT EXCEL
-window.exportExcel = function(){
-
-  let ws = XLSX.utils.json_to_sheet(dataList);
-  let wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Présences");
-
-  XLSX.writeFile(wb, "presences.xlsx");
 };
 
 </script>
