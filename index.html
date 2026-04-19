@@ -1,57 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ISEP SmartPresence FINAL</title>
+  <title>ISEP SmartPresence</title>
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
-
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
 
   <style>
     body {
-      font-family: 'Poppins';
-      background:#0a0f1c;
-      color:white;
       margin:0;
+      font-family:'Poppins';
+      background: radial-gradient(circle at top,#0f2027,#0a0f1c);
+      color:white;
+      text-align:center;
     }
 
     header {
-      text-align:center;
-      padding:20px;
-      background:#111;
+      padding:60px 20px;
     }
 
-    .container {
-      max-width:420px;
-      margin:auto;
-      padding:20px;
+    header h1 {
+      font-size:32px;
+    }
+
+    header p {
+      opacity:0.7;
+      margin-top:10px;
+    }
+
+    .btn {
+      display:inline-block;
+      margin:15px;
+      padding:15px 25px;
+      border-radius:12px;
+      text-decoration:none;
+      color:white;
+      font-weight:bold;
+      background:linear-gradient(135deg,#00f7ff,#00c6ff);
+      transition:0.3s;
+    }
+
+    .btn:hover {
+      transform:scale(1.1);
+      box-shadow:0 0 20px #00f7ff;
+    }
+
+    .section {
+      padding:40px 20px;
     }
 
     .card {
-      background:#1c1f2b;
-      padding:15px;
+      background:rgba(255,255,255,0.05);
+      margin:10px;
+      padding:20px;
       border-radius:15px;
-      margin-bottom:15px;
-    }
-
-    input, button {
-      width:100%;
-      padding:10px;
-      margin-top:10px;
-      border-radius:10px;
-      border:none;
-    }
-
-    button {
-      background:#00c6ff;
-      font-weight:bold;
-      cursor:pointer;
-    }
-
-    video, img {
-      width:100%;
-      margin-top:10px;
-      border-radius:10px;
     }
 
   </style>
@@ -60,135 +61,35 @@
 <body>
 
 <header>
-  <h2>ISEP SmartPresence FINAL</h2>
+  <h1>ISEP SmartPresence</h1>
+  <p>Système intelligent de gestion de présence sécurisé</p>
+
+  <a href="index.html" class="btn">🎓 Accéder à l'application</a>
+  <a href="admin.html" class="btn">📊 Dashboard Admin</a>
 </header>
 
-<div class="container">
+<div class="section">
+  <h2>🚀 Fonctionnalités</h2>
 
-<div class="card">
-  <input id="nom" placeholder="Nom">
-  <input id="matricule" placeholder="Matricule">
-
-  <button onclick="startScanner()">Scanner QR</button>
-  <div id="reader"></div>
-
-  <video id="video" autoplay></video>
-  <button onclick="takePhoto()">Capturer présence</button>
-
-  <canvas id="canvas" style="display:none;"></canvas>
-  <img id="preview">
+  <div class="card">📸 Scan QR sécurisé</div>
+  <div class="card">📍 Vérification GPS</div>
+  <div class="card">📷 Preuve photo</div>
+  <div class="card">📊 Dashboard temps réel</div>
 </div>
 
+<div class="section">
+  <h2>💡 Pourquoi ce système ?</h2>
+
+  <p>
+    SmartPresence élimine la triche en combinant plusieurs niveaux de sécurité :
+    QR dynamique, géolocalisation et preuve visuelle.
+  </p>
 </div>
 
-<script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBsFxW7QON1JhWshuwz8EXE9NggQ0fCUMA",
-  authDomain: "smartpresence-ff489.firebaseapp.com",
-  databaseURL: "https://smartpresence-ff489-default-rtdb.firebaseio.com",
-  projectId: "smartpresence-ff489",
-  storageBucket: "smartpresence-ff489.firebasestorage.app",
-  messagingSenderId: "676917669187",
-  appId: "1:676917669187:web:d825c0b3ff3ee0944c13f6"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const storage = getStorage(app);
-
-
-// 📍 GPS CHECK
-function checkGPS(callback){
-
-  navigator.geolocation.getCurrentPosition(pos=>{
-
-    let lat = pos.coords.latitude;
-    let lon = pos.coords.longitude;
-
-    let allowedLat = 14.742;
-    let allowedLon = -17.455;
-
-    let distance = Math.sqrt(
-      (lat - allowedLat) ** 2 +
-      (lon - allowedLon) ** 2
-    );
-
-    if(distance < 0.01){
-      callback(true);
-    } else {
-      alert("⛔ Hors zone !");
-      callback(false);
-    }
-
-  });
-}
-
-
-// 📸 CAMERA
-function startCamera(){
-  navigator.mediaDevices.getUserMedia({video:true})
-  .then(s=>{
-    document.getElementById("video").srcObject = s;
-  });
-}
-
-
-// 📸 SCANNER
-window.startScanner = function(){
-
-  let qr = new Html5Qrcode("reader");
-
-  Html5Qrcode.getCameras().then(devices=>{
-    qr.start(devices[0].id,{fps:10,qrbox:250},()=>{
-      qr.stop();
-      startCamera();
-    });
-  });
-};
-
-
-// 📸 PHOTO + SAVE
-window.takePhoto = async function(){
-
-  checkGPS(async (ok)=>{
-
-    if(!ok) return;
-
-    let video = document.getElementById("video");
-    let canvas = document.getElementById("canvas");
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    let ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0);
-
-    let imageData = canvas.toDataURL("image/png");
-    document.getElementById("preview").src = imageData;
-
-    let fileRef = sRef(storage, "photos/" + Date.now());
-    await uploadString(fileRef, imageData, "data_url");
-
-    let url = await getDownloadURL(fileRef);
-
-    push(ref(db,"presences"),{
-      nom: document.getElementById("nom").value,
-      matricule: document.getElementById("matricule").value,
-      photo: url,
-      date: new Date().toLocaleString()
-    });
-
-    alert("✅ Présence validée !");
-  });
-
-};
-
-</script>
+<div class="section">
+  <h2>🎓 Projet académique</h2>
+  <p>ISEP Diamniadio – Informatique / Sécurité / Cloud</p>
+</div>
 
 </body>
 </html>
