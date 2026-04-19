@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ISEP SmartPresence PRO+</title>
+  <title>ISEP SmartPresence PREMIUM</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -16,11 +16,20 @@
     }
 
     header {
-      text-align: center;
-      padding: 20px;
-      font-size: 22px;
-      font-weight: 600;
-      letter-spacing: 1px;
+      background: linear-gradient(135deg,#0a3d62,#1e90ff);
+      padding:20px;
+      text-align:center;
+      border-bottom-left-radius:20px;
+      border-bottom-right-radius:20px;
+      box-shadow:0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    header img {
+      width: 50px;
+    }
+
+    header h2 {
+      margin: 5px 0;
     }
 
     .container {
@@ -45,7 +54,6 @@
       border-radius: 10px;
       border: none;
       outline: none;
-      font-size: 14px;
     }
 
     button {
@@ -93,26 +101,28 @@
     }
 
     .badge {
-      display: inline-block;
-      background: #00ff94;
-      color: black;
-      padding: 5px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      margin-bottom: 10px;
+      background:#00ff94;
+      color:black;
+      padding:5px 10px;
+      border-radius:20px;
+      font-size:12px;
+      display:inline-block;
+      margin-bottom:10px;
     }
-
   </style>
 </head>
 
 <body>
 
-<header>🎓 ISEP SmartPresence PREMIUM</header>
+<header>
+  <img src="https://cdn-icons-png.flaticon.com/512/3135/3135755.png">
+  <h2>ISEP SmartPresence</h2>
+  <div style="font-size:13px;">Système intelligent de présence</div>
+</header>
 
 <div class="container">
 
 <div class="card">
-
   <div class="badge">Étudiant</div>
 
   <input id="nom" placeholder="Nom complet">
@@ -131,7 +141,6 @@
   <canvas id="canvas" style="display:none;"></canvas>
 
   <img id="preview" />
-
 </div>
 
 <div class="card">
