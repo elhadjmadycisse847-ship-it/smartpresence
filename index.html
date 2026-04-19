@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ISEP Admin PRO</title>
+  <title>ISEP Admin Dashboard</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -15,6 +15,10 @@
       text-align:center;
     }
 
+    h2 {
+      margin-top:20px;
+    }
+
     .box {
       margin:20px;
       padding:20px;
@@ -22,15 +26,12 @@
       border-radius:15px;
     }
 
-    input, button {
+    button {
       padding:10px;
       margin-top:10px;
       width:90%;
       border-radius:10px;
       border:none;
-    }
-
-    button {
       background:#00c6ff;
       font-weight:bold;
       cursor:pointer;
@@ -47,44 +48,31 @@
       padding:10px;
       border-radius:10px;
     }
+
+    img {
+      margin-top:5px;
+      border-radius:10px;
+    }
   </style>
 </head>
 
 <body>
 
-<h2>💎 ISEP SmartPresence ADMIN</h2>
-
-<!-- 💳 PAIEMENT -->
-<div class="box" id="paymentBox">
-  <h3>💳 Paiement Licence</h3>
-
-  <p>Montant : <b>25 000 FCFA</b></p>
-  <p>Envoyer via Wave / Orange Money</p>
-  <p>📲 Numéro : <b>78 751 49 35</b></p>
-
-  <input id="transaction" placeholder="Numéro de transaction">
-
-  <button onclick="validerPaiement()">Valider paiement</button>
-</div>
-
-<!-- 🔐 DASHBOARD -->
-<div id="dashboard" style="display:none">
+<h2>📊 ISEP SmartPresence ADMIN</h2>
 
 <div class="box">
   <button onclick="exportExcel()">📥 Export Excel</button>
 </div>
 
 <div class="box">
-  <h3>📊 Statistiques</h3>
+  <h3>📈 Statistiques</h3>
   Total : <span id="total">0</span>
   <canvas id="chart"></canvas>
 </div>
 
 <div class="box">
-  <h3>📋 Présences</h3>
+  <h3>📋 Liste des présences</h3>
   <ul id="liste"></ul>
-</div>
-
 </div>
 
 <script type="module">
@@ -108,34 +96,6 @@ const db = getDatabase(app);
 let dataList = [];
 let chart;
 
-// 🔐 CHECK LICENCE
-let licence = localStorage.getItem("licence");
-
-if(licence === "ISEP-2026-PRO"){
-  document.getElementById("paymentBox").style.display = "none";
-  document.getElementById("dashboard").style.display = "block";
-}
-
-
-// 💳 VALIDATION PAIEMENT
-window.validerPaiement = function(){
-
-  let tx = document.getElementById("transaction").value;
-
-  if(tx.length < 5){
-    alert("Transaction invalide");
-    return;
-  }
-
-  // 👉 ici tu peux vérifier manuellement après paiement
-  localStorage.setItem("licence","ISEP-2026-PRO");
-
-  alert("✅ Paiement validé !");
-  location.reload();
-};
-
-
-// 📊 DATA
 onValue(ref(db,"presences"), (snap)=>{
 
   let ul = document.getElementById("liste");
@@ -155,8 +115,8 @@ onValue(ref(db,"presences"), (snap)=>{
 
     let li = document.createElement("li");
     li.innerHTML = `
-      ${d.nom} - ${d.matricule}<br>
-      <img src="${d.photo}" width="100">
+      <b>${d.nom}</b> - ${d.matricule}<br>
+      <img src="${d.photo}" width="120">
     `;
     ul.appendChild(li);
   });
@@ -181,8 +141,6 @@ onValue(ref(db,"presences"), (snap)=>{
 
 });
 
-
-// 📥 EXPORT EXCEL
 window.exportExcel = function(){
 
   let ws = XLSX.utils.json_to_sheet(dataList);
