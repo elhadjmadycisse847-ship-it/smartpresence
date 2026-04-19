@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ISEP SmartPresence ULTRA FINAL</title>
+  <title>ISEP Admin PRO</title>
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
   <style>
     body {
       font-family: Arial;
       background:#0a0f1c;
       color:white;
+      margin:0;
       text-align:center;
     }
 
     .box {
       margin:20px;
-      padding:15px;
+      padding:20px;
       background:#1c1f2b;
       border-radius:15px;
     }
 
     input, button {
-      width:90%;
       padding:10px;
       margin-top:10px;
+      width:90%;
       border-radius:10px;
       border:none;
     }
@@ -31,39 +33,64 @@
     button {
       background:#00c6ff;
       font-weight:bold;
+      cursor:pointer;
     }
 
-    video { width:90%; margin-top:10px; }
+    ul {
+      list-style:none;
+      padding:0;
+    }
+
+    li {
+      margin:10px;
+      background:#222;
+      padding:10px;
+      border-radius:10px;
+    }
   </style>
 </head>
 
 <body>
 
-<h2>ISEP SmartPresence ULTRA</h2>
+<h2>💎 ISEP SmartPresence ADMIN</h2>
+
+<!-- 💳 PAIEMENT -->
+<div class="box" id="paymentBox">
+  <h3>💳 Paiement Licence</h3>
+
+  <p>Montant : <b>25 000 FCFA</b></p>
+  <p>Envoyer via Wave / Orange Money</p>
+  <p>📲 Numéro : <b>78 751 49 35</b></p>
+
+  <input id="transaction" placeholder="Numéro de transaction">
+
+  <button onclick="validerPaiement()">Valider paiement</button>
+</div>
+
+<!-- 🔐 DASHBOARD -->
+<div id="dashboard" style="display:none">
 
 <div class="box">
-  <h3>QR ACTUEL</h3>
-  <h1 id="qrCode"></h1>
+  <button onclick="exportExcel()">📥 Export Excel</button>
 </div>
 
 <div class="box">
-  <input id="nom" placeholder="Nom">
-  <input id="matricule" placeholder="Matricule">
+  <h3>📊 Statistiques</h3>
+  Total : <span id="total">0</span>
+  <canvas id="chart"></canvas>
+</div>
 
-  <button onclick="startScanner()">Scanner QR</button>
-  <div id="reader"></div>
+<div class="box">
+  <h3>📋 Présences</h3>
+  <ul id="liste"></ul>
+</div>
 
-  <video id="video" autoplay></video>
-  <button onclick="takePhoto()">Valider présence</button>
-
-  <canvas id="canvas" style="display:none;"></canvas>
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBsFxW7QON1JhWshuwz8EXE9NggQ0fCUMA",
@@ -77,113 +104,92 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const storage = getStorage(app);
 
+let dataList = [];
+let chart;
 
-// 🔄 QR DYNAMIQUE (change toutes les 30 sec)
-function generateQR(){
-  let time = Math.floor(Date.now() / 30000);
-  document.getElementById("qrCode").innerText = "ISEP-"+time;
-}
+// 🔐 CHECK LICENCE
+let licence = localStorage.getItem("licence");
 
-setInterval(generateQR, 1000);
-generateQR();
-
-
-// 📍 GPS CHECK
-function checkGPS(callback){
-
-  navigator.geolocation.getCurrentPosition(pos=>{
-
-    let lat = pos.coords.latitude;
-    let lon = pos.coords.longitude;
-
-    let allowedLat = 14.742;
-    let allowedLon = -17.455;
-
-    let distance = Math.sqrt(
-      (lat - allowedLat) ** 2 +
-      (lon - allowedLon) ** 2
-    );
-
-    if(distance < 0.01){
-      callback(true);
-    } else {
-      alert("⛔ Hors zone !");
-      callback(false);
-    }
-
-  });
+if(licence === "ISEP-2026-PRO"){
+  document.getElementById("paymentBox").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
 }
 
 
-// 📸 CAMERA
-function startCamera(){
-  navigator.mediaDevices.getUserMedia({video:true})
-  .then(s=>{
-    document.getElementById("video").srcObject = s;
-  });
-}
+// 💳 VALIDATION PAIEMENT
+window.validerPaiement = function(){
 
+  let tx = document.getElementById("transaction").value;
 
-// 📸 SCAN
-let scannedCode = null;
+  if(tx.length < 5){
+    alert("Transaction invalide");
+    return;
+  }
 
-window.startScanner = function(){
+  // 👉 ici tu peux vérifier manuellement après paiement
+  localStorage.setItem("licence","ISEP-2026-PRO");
 
-  let qr = new Html5Qrcode("reader");
-
-  Html5Qrcode.getCameras().then(devices=>{
-    qr.start(devices[0].id,{fps:10,qrbox:250},(text)=>{
-      scannedCode = text;
-      qr.stop();
-      startCamera();
-    });
-  });
+  alert("✅ Paiement validé !");
+  location.reload();
 };
 
 
-// 📸 VALIDATION
-window.takePhoto = async function(){
+// 📊 DATA
+onValue(ref(db,"presences"), (snap)=>{
 
-  checkGPS(async (ok)=>{
+  let ul = document.getElementById("liste");
+  ul.innerHTML="";
+  dataList=[];
 
-    if(!ok) return;
+  let total = 0;
+  let days = {};
 
-    let currentQR = "ISEP-"+Math.floor(Date.now()/30000);
+  snap.forEach(c=>{
+    let d = c.val();
+    dataList.push(d);
+    total++;
 
-    if(scannedCode !== currentQR){
-      alert("⛔ QR expiré !");
-      return;
-    }
+    let day = d.date.split(",")[0];
+    days[day] = (days[day] || 0) + 1;
 
-    let video = document.getElementById("video");
-    let canvas = document.getElementById("canvas");
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    let ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0);
-
-    let imageData = canvas.toDataURL("image/png");
-
-    let fileRef = sRef(storage, "photos/" + Date.now());
-    await uploadString(fileRef, imageData, "data_url");
-
-    let url = await getDownloadURL(fileRef);
-
-    push(ref(db,"presences"),{
-      nom: document.getElementById("nom").value,
-      matricule: document.getElementById("matricule").value,
-      photo: url,
-      qr: scannedCode,
-      date: new Date().toLocaleString()
-    });
-
-    alert("✅ Présence VALIDÉE !");
+    let li = document.createElement("li");
+    li.innerHTML = `
+      ${d.nom} - ${d.matricule}<br>
+      <img src="${d.photo}" width="100">
+    `;
+    ul.appendChild(li);
   });
 
+  document.getElementById("total").textContent = total;
+
+  let labels = Object.keys(days);
+  let values = Object.values(days);
+
+  if(chart) chart.destroy();
+
+  chart = new Chart(document.getElementById("chart"), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Présences",
+        data: values
+      }]
+    }
+  });
+
+});
+
+
+// 📥 EXPORT EXCEL
+window.exportExcel = function(){
+
+  let ws = XLSX.utils.json_to_sheet(dataList);
+  let wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Présences");
+
+  XLSX.writeFile(wb, "presences.xlsx");
 };
 
 </script>
