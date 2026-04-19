@@ -113,9 +113,9 @@
     <h3>📊 Statistiques</h3>
 
     <div class="stats">
-      Total présences : <span id="total">0</span><br>
-      Étudiants uniques : <span id="unique">0</span><br>
-      Dernière présence : <span id="last">-</span>
+      Total : <span id="total">0</span><br>
+      Uniques : <span id="unique">0</span><br>
+      Dernier : <span id="last">-</span>
     </div>
 
     <h3>📋 Liste</h3>
@@ -142,6 +142,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+
+// 📍 COORDONNÉES ISEP (approx)
+const ISEP_LAT = 14.744;
+const ISEP_LON = -17.531;
 
 // 🔐 LOGIN
 window.login = function() {
@@ -186,16 +190,28 @@ onValue(ref(db, "presences"), (snapshot) => {
 
 });
 
-// 📸 SCANNER + ANTI-TRICHE
+// 📸 SCANNER + GPS + ANTI TRICHE
 let html5QrCode;
 
 window.startScanner = function() {
 
-  html5QrCode = new Html5Qrcode("reader");
+  navigator.geolocation.getCurrentPosition(async (position) => {
 
-  Html5Qrcode.getCameras().then(devices => {
+    let lat = position.coords.latitude;
+    let lon = position.coords.longitude;
 
-    if (devices.length) {
+    let distance = Math.sqrt(
+      Math.pow(lat - ISEP_LAT, 2) + Math.pow(lon - ISEP_LON, 2)
+    );
+
+    if (distance > 0.01) {
+      alert("❌ Vous n'êtes pas à ISEP !");
+      return;
+    }
+
+    html5QrCode = new Html5Qrcode("reader");
+
+    Html5Qrcode.getCameras().then(devices => {
 
       let cameraId = devices[0].id;
 
@@ -212,7 +228,7 @@ window.startScanner = function() {
             return;
           }
 
-          // 🔥 ANTI-TRICHE
+          // 🔥 ANTI TRICHE
           const snapshot = await new Promise((resolve) => {
             onValue(ref(db, "presences"), resolve, { onlyOnce: true });
           });
@@ -234,25 +250,23 @@ window.startScanner = function() {
             return;
           }
 
-          // ✅ ENREGISTREMENT
           push(ref(db, "presences"), {
             nom,
             matricule,
-            qr: decodedText,
-            date: new Date().toLocaleString()
+            date: new Date().toLocaleString(),
+            latitude: lat,
+            longitude: lon
           });
 
-          alert("✅ Présence enregistrée !");
+          alert("✅ Présence validée !");
           html5QrCode.stop();
         }
       );
 
-    } else {
-      alert("Aucune caméra trouvée");
-    }
+    });
 
-  }).catch(err => {
-    alert("Erreur: " + err);
+  }, () => {
+    alert("Active la localisation !");
   });
 };
 
