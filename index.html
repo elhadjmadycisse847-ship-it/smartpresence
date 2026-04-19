@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ISEP SmartPresence PREMIUM</title>
+  <title>ISEP SmartPresence PRO</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -9,26 +9,42 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
   <style>
-    body {
+    * {
       margin: 0;
+      padding: 0;
+      box-sizing: border-box;
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    }
+
+    body {
+      background: radial-gradient(circle at top, #0f2027, #0a0f1c);
       color: white;
+      min-height: 100vh;
     }
 
     header {
-      background: linear-gradient(135deg,#0a3d62,#1e90ff);
-      padding:25px;
-      text-align:center;
-      border-radius:0 0 20px 20px;
-      box-shadow:0 5px 15px rgba(0,0,0,0.3);
+      text-align: center;
+      padding: 30px;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 0 40px rgba(0,255,255,0.1);
     }
 
     header img {
-      width:80px;
-      display:block;
-      margin:auto;
-      margin-bottom:10px;
+      width: 70px;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 10px #00f7ff);
+    }
+
+    header h1 {
+      font-size: 24px;
+      letter-spacing: 1px;
+    }
+
+    header p {
+      font-size: 13px;
+      opacity: 0.7;
     }
 
     .container {
@@ -38,23 +54,55 @@
     }
 
     .card {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(10px);
-      border-radius: 15px;
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
       padding: 20px;
       margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 0 25px rgba(0,255,255,0.05);
+      transition: 0.3s;
     }
 
-    input, button {
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 40px rgba(0,255,255,0.15);
+    }
+
+    input {
       width: 100%;
       padding: 12px;
       margin-top: 10px;
       border-radius: 10px;
       border: none;
+      outline: none;
+      background: rgba(255,255,255,0.1);
+      color: white;
     }
 
-    .scanBtn { background:#00c6ff; color:black; }
-    .photoBtn { background:#00ff94; color:black; }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: 0.3s;
+    }
+
+    .scanBtn {
+      background: linear-gradient(135deg,#00f7ff,#00c3ff);
+    }
+
+    .photoBtn {
+      background: linear-gradient(135deg,#00ff94,#00c76a);
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(0,255,255,0.4);
+    }
 
     video, img {
       width: 100%;
@@ -62,19 +110,22 @@
       margin-top: 10px;
     }
 
-    ul { list-style:none; padding:0; }
+    ul {
+      list-style: none;
+    }
 
     li {
-      background: rgba(255,255,255,0.1);
-      margin: 8px 0;
+      background: rgba(255,255,255,0.08);
       padding: 10px;
+      margin-top: 10px;
       border-radius: 10px;
+      font-size: 13px;
     }
 
     canvas {
-      background:white;
-      border-radius:10px;
-      margin-top:10px;
+      background: white;
+      border-radius: 10px;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -83,8 +134,8 @@
 
 <header>
   <img src="logo.png">
-  <div style="font-size:22px; font-weight:600;">ISEP SmartPresence</div>
-  <div style="font-size:14px;">Système intelligent de présence</div>
+  <h1>ISEP SmartPresence</h1>
+  <p>Système intelligent de présence</p>
 </header>
 
 <div class="container">
@@ -141,7 +192,6 @@ const storage = getStorage(app);
 
 let chart;
 
-// LISTE + STATS
 onValue(ref(db, "presences"), (snapshot) => {
 
   let liste = document.getElementById("liste");
@@ -149,7 +199,6 @@ onValue(ref(db, "presences"), (snapshot) => {
 
   let total = 0;
   let uniqueSet = new Set();
-  let days = {};
 
   snapshot.forEach((child) => {
     let d = child.val();
@@ -157,51 +206,28 @@ onValue(ref(db, "presences"), (snapshot) => {
     total++;
     uniqueSet.add(d.matricule);
 
-    let day = d.date.split(",")[0];
-    days[day] = (days[day] || 0) + 1;
-
     let li = document.createElement("li");
     li.innerHTML = `
       <b>${d.nom}</b><br>
       ${d.matricule}<br>
-      <img src="${d.photo}" />
+      <img src="${d.photo}">
     `;
     liste.appendChild(li);
   });
 
   document.getElementById("total").textContent = total;
   document.getElementById("unique").textContent = uniqueSet.size;
-
-  let labels = Object.keys(days);
-  let data = Object.values(days);
-
-  if (chart) chart.destroy();
-
-  chart = new Chart(document.getElementById("chart"), {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Présences',
-        data: data
-      }]
-    }
-  });
-
 });
 
-// SCANNER
 let html5QrCode;
 
 window.startScanner = function() {
 
-  html5QrCode = new Html5QrCode("reader");
+  html5QrCode = new Html5Qrcode("reader");
 
-  Html5QrCode.getCameras().then(devices => {
-    let cameraId = devices[0].id;
-
+  Html5Qrcode.getCameras().then(devices => {
     html5QrCode.start(
-      cameraId,
+      devices[0].id,
       { fps: 10, qrbox: 250 },
       () => {
         html5QrCode.stop();
@@ -211,7 +237,6 @@ window.startScanner = function() {
   });
 };
 
-// CAMERA
 function startCamera() {
   navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
@@ -219,12 +244,10 @@ function startCamera() {
     });
 }
 
-// PHOTO
 window.takePhoto = async function() {
 
   let video = document.getElementById("video");
   let canvas = document.getElementById("canvas");
-  let preview = document.getElementById("preview");
 
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
@@ -233,18 +256,15 @@ window.takePhoto = async function() {
   ctx.drawImage(video, 0, 0);
 
   let imageData = canvas.toDataURL("image/png");
-  preview.src = imageData;
+  document.getElementById("preview").src = imageData;
 
   let fileRef = sRef(storage, "photos/" + Date.now());
   await uploadString(fileRef, imageData, "data_url");
   let url = await getDownloadURL(fileRef);
 
-  let nom = document.getElementById("nom").value;
-  let matricule = document.getElementById("matricule").value;
-
   push(ref(db, "presences"), {
-    nom,
-    matricule,
+    nom: document.getElementById("nom").value,
+    matricule: document.getElementById("matricule").value,
     photo: url,
     date: new Date().toLocaleString()
   });
