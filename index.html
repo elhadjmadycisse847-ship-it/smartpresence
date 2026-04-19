@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ISEP SmartPresence PRO</title>
+  <title>ISEP SmartPresence PRO+</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
     body {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: Arial;
       background: #f4f6f9;
     }
 
@@ -17,111 +17,71 @@
       color: white;
       padding: 15px;
       text-align: center;
-      font-size: 20px;
       font-weight: bold;
     }
 
     .container {
-      padding: 20px;
       max-width: 400px;
       margin: auto;
+      padding: 20px;
     }
 
     .card {
       background: white;
       padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       margin-bottom: 20px;
     }
 
-    input {
+    input, button {
       width: 100%;
       padding: 12px;
       margin-top: 10px;
       border-radius: 8px;
-      border: 1px solid #ccc;
     }
 
     button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 15px;
-      border: none;
-      border-radius: 8px;
       background: #1e90ff;
       color: white;
-      font-weight: bold;
-      cursor: pointer;
+      border: none;
     }
 
-    button:hover {
-      background: #0c7cd5;
+    video, canvas {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 10px;
     }
 
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    li {
-      background: #eef3f7;
-      padding: 10px;
-      margin: 5px 0;
+    img {
+      width: 100%;
+      margin-top: 5px;
       border-radius: 8px;
-    }
-
-    .stats {
-      background: #eef3f7;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
     }
   </style>
 </head>
 
 <body>
 
-<header>
-🎓 ISEP DIAMNIADIO - SmartPresence PRO
-</header>
+<header>🎓 ISEP SmartPresence PRO+</header>
 
 <div class="container">
 
-  <!-- LOGIN -->
-  <div class="card">
-    <h3>🔐 Admin</h3>
-    <input type="password" id="password" placeholder="Mot de passe">
-    <button onclick="login()">Connexion</button>
-  </div>
+<div class="card">
+  <input id="nom" placeholder="Nom">
+  <input id="matricule" placeholder="Matricule">
 
-  <!-- ETUDIANT -->
-  <div class="card">
-    <h3>👨‍🎓 Étudiant</h3>
+  <button onclick="startScanner()">📸 Scanner QR</button>
+  <div id="reader"></div>
 
-    <input id="nom" placeholder="Nom">
-    <input id="matricule" placeholder="Matricule">
+  <video id="video" autoplay></video>
+  <button onclick="takePhoto()">📷 Prendre photo</button>
+  <canvas id="canvas" style="display:none;"></canvas>
+</div>
 
-    <button onclick="startScanner()">📸 Scanner QR</button>
-
-    <div id="reader"></div>
-  </div>
-
-  <!-- ADMIN PANEL -->
-  <div class="card" id="adminPanel" style="display:none;">
-
-    <h3>📊 Statistiques</h3>
-
-    <div class="stats">
-      Total : <span id="total">0</span><br>
-      Uniques : <span id="unique">0</span><br>
-      Dernier : <span id="last">-</span>
-    </div>
-
-    <h3>📋 Liste</h3>
-    <ul id="liste"></ul>
-
-  </div>
+<div class="card">
+  <h3>📋 Présences</h3>
+  <ul id="liste"></ul>
+</div>
 
 </div>
 
@@ -129,6 +89,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
+import { getStorage, ref as sRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "TA_CLE",
@@ -142,172 +103,88 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const storage = getStorage(app);
 
-// 🔐 LOGIN
-window.login = function() {
-  let pass = document.getElementById("password").value;
-
-  if (pass === "admin123") {
-    document.getElementById("adminPanel").style.display = "block";
-    alert("Connexion réussie");
-  } else {
-    alert("Mot de passe incorrect");
-  }
-};
-
-// 📊 LISTE + STATS
+// 📋 LISTE
 const liste = document.getElementById("liste");
 
 onValue(ref(db, "presences"), (snapshot) => {
-
   liste.innerHTML = "";
 
-  let total = 0;
-  let uniqueSet = new Set();
-  let lastDate = "";
-
   snapshot.forEach((child) => {
-
-    const data = child.val();
-
-    total++;
-    uniqueSet.add(data.matricule);
-    lastDate = data.date;
+    let d = child.val();
 
     let li = document.createElement("li");
-    li.textContent = data.nom + " (" + data.matricule + ") - " + data.date;
+    li.innerHTML = `
+      ${d.nom} (${d.matricule}) <br>
+      <img src="${d.photo}" />
+    `;
 
     liste.appendChild(li);
   });
-
-  document.getElementById("total").textContent = total;
-  document.getElementById("unique").textContent = uniqueSet.size;
-  document.getElementById("last").textContent = lastDate || "-";
-
 });
 
-// 📸 SCANNER + GPS + ANTI TRICHE
+// 📸 SCANNER
 let html5QrCode;
 
 window.startScanner = function() {
 
-  let lastScan = localStorage.getItem("lastScan");
-  let now = Date.now();
+  html5QrCode = new Html5Qrcode("reader");
 
-  if (lastScan && (now - lastScan < 60000)) {
-    alert("❌ Attends avant de rescanner !");
-    return;
-  }
+  Html5Qrcode.getCameras().then(devices => {
 
-  navigator.geolocation.getCurrentPosition(async (pos1) => {
+    let cameraId = devices[0].id;
 
-    setTimeout(() => {
-
-      navigator.geolocation.getCurrentPosition(async (pos2) => {
-
-        let lat = pos2.coords.latitude;
-        let lon = pos2.coords.longitude;
-
-        const ISEP_LAT = 14.745;   // 🔴 remplace avec ta position exacte
-        const ISEP_LON = -17.530;  // 🔴 remplace avec ta position exacte
-
-        function getDistance(lat1, lon1, lat2, lon2) {
-          const R = 6371000;
-          const dLat = (lat2 - lat1) * Math.PI / 180;
-          const dLon = (lon2 - lon1) * Math.PI / 180;
-
-          const a =
-            Math.sin(dLat/2)**2 +
-            Math.cos(lat1*Math.PI/180) *
-            Math.cos(lat2*Math.PI/180) *
-            Math.sin(dLon/2)**2;
-
-          return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-        }
-
-        let distance = getDistance(lat, lon, ISEP_LAT, ISEP_LON);
-
-        if (distance > 50) {
-          alert("❌ Hors zone !");
-          return;
-        }
-
-        let moveDistance = getDistance(
-          pos1.coords.latitude,
-          pos1.coords.longitude,
-          pos2.coords.latitude,
-          pos2.coords.longitude
-        );
-
-        if (moveDistance < 1) {
-          alert("❌ Position suspecte !");
-          return;
-        }
-
-        html5QrCode = new Html5Qrcode("reader");
-
-        Html5Qrcode.getCameras().then(devices => {
-
-          let cameraId = devices[0].id;
-
-          html5QrCode.start(
-            cameraId,
-            { fps: 10, qrbox: 250 },
-            async (decodedText) => {
-
-              let nom = document.getElementById("nom").value;
-              let matricule = document.getElementById("matricule").value;
-
-              if (!nom || !matricule) {
-                alert("Remplis les champs !");
-                return;
-              }
-
-              // 🔥 anti double scan
-              const snapshot = await new Promise((resolve) => {
-                onValue(ref(db, "presences"), resolve, { onlyOnce: true });
-              });
-
-              let deja = false;
-              let today = new Date().toLocaleDateString();
-
-              snapshot.forEach(child => {
-                let d = child.val();
-                if (d.matricule === matricule && d.date.includes(today)) {
-                  deja = true;
-                }
-              });
-
-              if (deja) {
-                alert("❌ Déjà scanné !");
-                html5QrCode.stop();
-                return;
-              }
-
-              localStorage.setItem("lastScan", Date.now());
-
-              push(ref(db, "presences"), {
-                nom,
-                matricule,
-                date: new Date().toLocaleString(),
-                lat,
-                lon
-              });
-
-              alert("✅ Présence validée !");
-              html5QrCode.stop();
-            }
-          );
-
-        });
-
-      });
-
-    }, 2000);
-
-  }, () => {
-    alert("Active GPS !");
+    html5QrCode.start(
+      cameraId,
+      { fps: 10, qrbox: 250 },
+      () => {
+        html5QrCode.stop();
+        startCamera();
+      }
+    );
   });
+};
+
+// 📷 CAMERA PHOTO
+function startCamera() {
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      document.getElementById("video").srcObject = stream;
+    });
+}
+
+// 📷 PRENDRE PHOTO
+window.takePhoto = async function() {
+
+  let video = document.getElementById("video");
+  let canvas = document.getElementById("canvas");
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  let ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0);
+
+  let imageData = canvas.toDataURL("image/png");
+
+  let fileRef = sRef(storage, "photos/" + Date.now());
+
+  await uploadString(fileRef, imageData, "data_url");
+
+  let url = await getDownloadURL(fileRef);
+
+  let nom = document.getElementById("nom").value;
+  let matricule = document.getElementById("matricule").value;
+
+  push(ref(db, "presences"), {
+    nom,
+    matricule,
+    photo: url,
+    date: new Date().toLocaleString()
+  });
+
+  alert("✅ Présence + photo enregistrées !");
 };
 
 </script>
