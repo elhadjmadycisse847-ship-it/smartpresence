@@ -3,7 +3,9 @@
 <head>
   <title>ISEP SmartPresence</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600;800&display=swap" rel="stylesheet">
 
   <style>
     body {
@@ -14,14 +16,14 @@
     }
 
     header {
+      padding:80px 20px;
       text-align:center;
-      padding:60px 20px;
       background: radial-gradient(circle at top,#0f2027,#0a0f1c);
     }
 
     h1 {
-      font-size:36px;
-      font-weight:600;
+      font-size:40px;
+      font-weight:800;
     }
 
     p {
@@ -37,25 +39,60 @@
       color:white;
       font-weight:bold;
       background:linear-gradient(135deg,#00f7ff,#00c6ff);
+      cursor:pointer;
     }
 
     .section {
-      padding:40px 20px;
+      padding:50px 20px;
       text-align:center;
+    }
+
+    .grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:15px;
+      max-width:600px;
+      margin:auto;
     }
 
     .card {
       background:rgba(255,255,255,0.05);
-      margin:10px;
       padding:20px;
       border-radius:15px;
     }
 
     footer {
-      text-align:center;
       padding:20px;
+      text-align:center;
       opacity:0.6;
-      margin-top:40px;
+    }
+
+    /* APP */
+    #appSection {
+      display:none;
+      max-width:420px;
+      margin:auto;
+      padding:20px;
+    }
+
+    input, button {
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border-radius:10px;
+      border:none;
+    }
+
+    button {
+      background:#00c6ff;
+      font-weight:bold;
+      cursor:pointer;
+    }
+
+    video, img {
+      width:100%;
+      margin-top:10px;
+      border-radius:10px;
     }
   </style>
 </head>
@@ -66,26 +103,27 @@
   <h1>ISEP SmartPresence</h1>
   <p>Système intelligent de gestion de présence sécurisé</p>
 
-  <a href="index.html" class="btn">🎓 Accéder à l'application</a>
-  <a href="#contact" class="btn">📞 Contact</a>
+  <div class="btn" onclick="openApp()">🎓 Accéder à l'application</div>
+  <a href="#contact" class="btn">📞 Me contacter</a>
 </header>
 
 <div class="section">
   <h2>🚀 Fonctionnalités</h2>
 
-  <div class="card">📸 Scan QR sécurisé</div>
-  <div class="card">📍 Vérification GPS</div>
-  <div class="card">📷 Preuve photo</div>
-  <div class="card">📊 Dashboard admin</div>
+  <div class="grid">
+    <div class="card">📸 Scan QR sécurisé</div>
+    <div class="card">📍 Vérification GPS</div>
+    <div class="card">📷 Preuve photo</div>
+    <div class="card">📊 Dashboard admin</div>
+  </div>
 </div>
 
 <div class="section">
-  <h2>💡 À propos du projet</h2>
+  <h2>💡 Pourquoi SmartPresence ?</h2>
 
   <p>
-    SmartPresence est une solution innovante développée pour améliorer la gestion
-    des présences en milieu académique en combinant plusieurs technologies :
-    QR Code, géolocalisation et validation visuelle.
+    Ce système empêche la fraude en combinant QR code,
+    géolocalisation et validation visuelle.
   </p>
 </div>
 
@@ -98,8 +136,126 @@
 
 <footer>
   👨‍💻 Projet conçu par <b>Elhadj Mady Cisse</b><br>
-  🎓 ISEP Diamniadio • Informatique / Sécurité / Cloud
+  © 2026 SmartPresence • ISEP Diamniadio
 </footer>
+
+<!-- APP -->
+<div id="appSection">
+
+  <h2>📸 Enregistrer présence</h2>
+
+  <input id="nom" placeholder="Nom">
+  <input id="matricule" placeholder="Matricule">
+
+  <button onclick="startScanner()">Scanner QR</button>
+  <div id="reader"></div>
+
+  <video id="video" autoplay playsinline></video>
+  <button onclick="takePhoto()">Valider présence</button>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+  <img id="preview">
+
+</div>
+
+<script>
+
+// ouvrir app
+function openApp(){
+  document.getElementById("appSection").style.display="block";
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+// GPS
+function checkGPS(callback){
+  navigator.geolocation.getCurrentPosition(pos=>{
+
+    let lat = pos.coords.latitude;
+    let lon = pos.coords.longitude;
+
+    // ISEP Diamniadio approx
+    let allowedLat = 14.742;
+    let allowedLon = -17.455;
+
+    let distance = Math.sqrt(
+      (lat - allowedLat)**2 +
+      (lon - allowedLon)**2
+    );
+
+    if(distance < 0.01){
+      callback(true);
+    } else {
+      alert("⛔ Hors zone !");
+      callback(false);
+    }
+
+  }, ()=>{
+    alert("Active la localisation !");
+  });
+}
+
+// CAMERA
+function startCamera(){
+  navigator.mediaDevices.getUserMedia({video:true})
+  .then(stream=>{
+    document.getElementById("video").srcObject = stream;
+  })
+  .catch(()=>{
+    alert("Autorise la caméra !");
+  });
+}
+
+// QR
+function startScanner(){
+
+  let qr = new Html5Qrcode("reader");
+
+  Html5Qrcode.getCameras().then(devices=>{
+
+    if(devices.length === 0){
+      alert("Pas de caméra");
+      return;
+    }
+
+    qr.start(devices[0].id,{fps:10,qrbox:250},()=>{
+      qr.stop();
+      startCamera();
+    });
+
+  });
+
+}
+
+// PHOTO + GPS
+function takePhoto(){
+
+  checkGPS((ok)=>{
+
+    if(!ok) return;
+
+    let video = document.getElementById("video");
+
+    if(video.videoWidth === 0){
+      alert("Lance le scan d'abord !");
+      return;
+    }
+
+    let canvas = document.getElementById("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    let ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    let image = canvas.toDataURL("image/png");
+    document.getElementById("preview").src = image;
+
+    alert("✅ Présence validée avec GPS !");
+  });
+
+}
+
+</script>
 
 </body>
 </html>
