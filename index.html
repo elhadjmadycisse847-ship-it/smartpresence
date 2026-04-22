@@ -49,7 +49,6 @@
       text-align:center;
     }
 
-    /* 🔥 CARDS AGRANDIES */
     .card {
       background:rgba(255,255,255,0.07);
       margin:20px auto;
@@ -72,7 +71,6 @@
       margin-top:40px;
       font-size:16px;
     }
-
   </style>
 </head>
 
@@ -82,8 +80,8 @@
   <h1>ISEP SmartPresence</h1>
   <p>Système intelligent de gestion de présence sécurisé</p>
 
-  <div class="btn">🎓 Accéder à l'application</div>
-  <div class="btn">📞 Contact</div>
+  <div class="btn" onclick="openApp()">🎓 Accéder à l'application</div>
+  <a href="#contact" class="btn">📞 Contact</a>
 </header>
 
 <div class="section">
@@ -95,7 +93,6 @@
   <div class="card">📊 Dashboard admin</div>
 </div>
 
-<!-- 💡 POURQUOI -->
 <div class="section">
   <h2>💡 Pourquoi SmartPresence ?</h2>
 
@@ -108,8 +105,7 @@
   </div>
 </div>
 
-<!-- 📞 CONTACT -->
-<div class="section">
+<div class="section" id="contact">
   <h2>📞 Contact</h2>
 
   <div class="card">
@@ -122,6 +118,14 @@
   👨‍💻 Projet conçu par <b>Elhadj Mady Cisse</b><br><br>
   © 2026 SmartPresence • ISEP Diamniadio
 </footer>
+
+<script>
+function openApp(){
+  alert("🔐 Redirection vers l'application...");
+  // Si tu as une page app.html :
+  // window.location.href = "app.html";
+}
+</script>
 
 </body>
 </html>
