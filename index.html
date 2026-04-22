@@ -4,8 +4,6 @@
   <title>ISEP SmartPresence</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600;800&display=swap" rel="stylesheet">
 
@@ -18,42 +16,63 @@
     }
 
     header {
-      padding:60px;
       text-align:center;
+      padding:80px 20px;
+      background: radial-gradient(circle at top,#0f2027,#0a0f1c);
+    }
+
+    h1 {
+      font-size:42px;
+      font-weight:800;
+    }
+
+    p {
+      opacity:0.8;
+      font-size:18px;
     }
 
     .btn {
-      padding:15px;
-      background:#00c6ff;
-      margin:10px;
       display:inline-block;
-      border-radius:10px;
+      margin:15px;
+      padding:18px 30px;
+      border-radius:14px;
+      text-decoration:none;
+      color:white;
+      font-weight:bold;
+      background:linear-gradient(135deg,#00f7ff,#00c6ff);
       cursor:pointer;
+      font-size:18px;
     }
 
     .section {
-      padding:40px;
+      padding:60px 20px;
       text-align:center;
     }
 
-    #app, #admin, #loginBox {
-      display:none;
-      max-width:420px;
-      margin:auto;
+    /* 🔥 CARDS AGRANDIES */
+    .card {
+      background:rgba(255,255,255,0.07);
+      margin:20px auto;
+      padding:30px;
+      border-radius:20px;
+      max-width:500px;
+      font-size:20px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.5);
+      transition:0.3s;
     }
 
-    input, button {
-      width:100%;
-      padding:10px;
-      margin-top:10px;
-      border-radius:10px;
-      border:none;
+    .card:hover {
+      transform:scale(1.05);
     }
 
-    video, img {
-      width:100%;
-      margin-top:10px;
+    footer {
+      text-align:center;
+      padding:30px;
+      opacity:0.7;
+      margin-top:40px;
+      font-size:16px;
     }
+
   </style>
 </head>
 
@@ -61,212 +80,48 @@
 
 <header>
   <h1>ISEP SmartPresence</h1>
-  <p>Projet par <b>Elhadj Mady Cisse</b></p>
+  <p>Système intelligent de gestion de présence sécurisé</p>
 
-  <div class="btn" onclick="openApp()">🎓 Application</div>
-  <div class="btn" onclick="openAdmin()">📊 Admin</div>
+  <div class="btn">🎓 Accéder à l'application</div>
+  <div class="btn">📞 Contact</div>
 </header>
 
-<!-- APP -->
-<div id="app">
+<div class="section">
+  <h2>🚀 Fonctionnalités</h2>
 
-  <input id="nom" placeholder="Nom">
-  <input id="matricule" placeholder="Matricule">
-
-  <button onclick="startScanner()">Scanner QR</button>
-  <div id="reader"></div>
-
-  <video id="video" autoplay playsinline></video>
-  <button onclick="takePhoto()">Valider présence</button>
-
-  <canvas id="canvas" style="display:none;"></canvas>
-  <img id="preview">
-
+  <div class="card">📸 Scan QR sécurisé</div>
+  <div class="card">📍 Vérification GPS</div>
+  <div class="card">📷 Preuve photo</div>
+  <div class="card">📊 Dashboard admin</div>
 </div>
 
-<!-- LOGIN -->
-<div id="loginBox">
-  <input id="user" placeholder="Email">
-  <input id="pass" type="password" placeholder="Mot de passe">
-  <button onclick="login()">Login</button>
+<!-- 💡 POURQUOI -->
+<div class="section">
+  <h2>💡 Pourquoi SmartPresence ?</h2>
+
+  <div class="card">
+    Ce système empêche la fraude en combinant intelligemment<br><br>
+    📸 QR code<br>
+    📍 Géolocalisation<br>
+    📷 Validation visuelle<br><br>
+    pour garantir une présence réelle et fiable.
+  </div>
 </div>
 
-<!-- ADMIN -->
-<div id="admin">
+<!-- 📞 CONTACT -->
+<div class="section">
+  <h2>📞 Contact</h2>
 
-  <button onclick="exportExcel()">📥 Export Excel</button>
-
-  <h3>Total : <span id="total">0</span></h3>
-  <canvas id="chart"></canvas>
-
-  <ul id="list"></ul>
-
+  <div class="card">
+    📱 78 751 49 35<br><br>
+    📧 admin@isep.sn
+  </div>
 </div>
 
-<script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBsFxW7QON1JhWshuwz8EXE9NggQ0fCUMA",
-  authDomain: "smartpresence-ff489.firebaseapp.com",
-  databaseURL: "https://smartpresence-ff489-default-rtdb.firebaseio.com",
-  projectId: "smartpresence-ff489",
-  storageBucket: "smartpresence-ff489.appspot.com",
-  messagingSenderId: "676917669187",
-  appId: "1:676917669187:web:d825c0b3ff3ee0944c13f6"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const storage = getStorage(app);
-
-
-// NAV
-window.openApp = () => document.getElementById("app").style.display="block";
-
-window.openAdmin = ()=>{
-  if(localStorage.getItem("admin") === "ok"){
-    document.getElementById("admin").style.display="block";
-  } else {
-    document.getElementById("loginBox").style.display="block";
-  }
-};
-
-
-// LOGIN
-window.login = ()=>{
-  let u = document.getElementById("user").value;
-  let p = document.getElementById("pass").value;
-
-  if(u==="admin@isep.sn" && p==="1234"){
-    localStorage.setItem("admin","ok");
-    document.getElementById("loginBox").style.display="none";
-    document.getElementById("admin").style.display="block";
-  } else {
-    alert("❌ accès refusé");
-  }
-};
-
-
-// GPS
-function checkGPS(cb){
-  navigator.geolocation.getCurrentPosition(pos=>{
-    let d = Math.sqrt(
-      (pos.coords.latitude-14.742)**2 +
-      (pos.coords.longitude+17.455)**2
-    );
-    cb(d<0.01);
-  });
-}
-
-
-// CAMERA
-function startCamera(){
-  navigator.mediaDevices.getUserMedia({video:true})
-  .then(s=>document.getElementById("video").srcObject=s);
-}
-
-
-// QR
-window.startScanner = ()=>{
-  let qr = new Html5Qrcode("reader");
-
-  Html5Qrcode.getCameras().then(dev=>{
-    qr.start(dev[0].id,{fps:10,qrbox:250},()=>{
-      qr.stop();
-      startCamera();
-    });
-  });
-};
-
-
-// PHOTO
-window.takePhoto = ()=>{
-  checkGPS(async ok=>{
-
-    if(!ok){ alert("⛔ hors zone"); return; }
-
-    let v = document.getElementById("video");
-    let c = document.getElementById("canvas");
-
-    c.width = v.videoWidth;
-    c.height = v.videoHeight;
-
-    let ctx = c.getContext("2d");
-    ctx.drawImage(v,0,0);
-
-    let img = c.toDataURL("image/png");
-    document.getElementById("preview").src = img;
-
-    let file = sRef(storage,"photos/"+Date.now());
-    await uploadString(file,img,"data_url");
-    let url = await getDownloadURL(file);
-
-    push(ref(db,"presences"),{
-      nom: nom.value,
-      matricule: matricule.value,
-      photo:url,
-      date:new Date().toLocaleString()
-    });
-
-    alert("✅ enregistré !");
-  });
-};
-
-
-// ADMIN DATA
-let dataList = [];
-let chart;
-
-onValue(ref(db,"presences"), snap=>{
-
-  let ul = document.getElementById("list");
-  ul.innerHTML="";
-  dataList=[];
-
-  let total=0;
-  let days={};
-
-  snap.forEach(c=>{
-    let d=c.val();
-    dataList.push(d);
-    total++;
-
-    let day=d.date.split(",")[0];
-    days[day]=(days[day]||0)+1;
-
-    let li=document.createElement("li");
-    li.innerHTML=`${d.nom} (${d.matricule}) <img src="${d.photo}" width="80">`;
-    ul.appendChild(li);
-  });
-
-  document.getElementById("total").textContent=total;
-
-  let labels=Object.keys(days);
-  let values=Object.values(days);
-
-  if(chart) chart.destroy();
-
-  chart=new Chart(document.getElementById("chart"),{
-    type:'bar',
-    data:{labels:labels,datasets:[{data:values}]}
-  });
-
-});
-
-
-// EXPORT
-window.exportExcel = ()=>{
-  let ws=XLSX.utils.json_to_sheet(dataList);
-  let wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,"data");
-  XLSX.writeFile(wb,"presences.xlsx");
-};
-
-</script>
+<footer>
+  👨‍💻 Projet conçu par <b>Elhadj Mady Cisse</b><br><br>
+  © 2026 SmartPresence • ISEP Diamniadio
+</footer>
 
 </body>
 </html>
