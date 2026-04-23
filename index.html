@@ -1,155 +1,1206 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ISEP SmartPresence</title>
-
-  <script src="https://unpkg.com/html5-qrcode"></script>
-
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600;800&display=swap" rel="stylesheet">
-
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #06080f;
+      --surface: #0d1220;
+      --surface2: #131929;
+      --border: rgba(255,255,255,0.07);
+      --accent: #3b82f6;
+      --accent2: #06b6d4;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --radius: 14px;
+    }
+
     body {
-      margin:0;
-      font-family:'Poppins';
-      background:#0a0f1c;
-      color:white;
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    header {
-      text-align:center;
-      padding:80px 20px;
+    /* ── LANDING ── */
+    #landing {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 24px;
+      position: relative;
+      overflow: hidden;
     }
 
-    h1 { font-size:42px; }
-
-    .btn {
-      display:inline-block;
-      margin:10px;
-      padding:15px 25px;
-      border-radius:12px;
-      background:#00c6ff;
-      cursor:pointer;
+    #landing::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59,130,246,0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 80%, rgba(6,182,212,0.10) 0%, transparent 60%);
+      pointer-events: none;
     }
 
-    .section {
-      padding:40px 20px;
-      text-align:center;
+    .grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 28px;
+    }
+
+    .logo-badge span { font-size: 14px; }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(36px, 8vw, 72px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #fff 30%, var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 480px;
+      line-height: 1.7;
+      margin-bottom: 40px;
+    }
+
+    .features {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 44px;
+    }
+
+    .feature-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 8px 18px;
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      border: none;
+      padding: 16px 36px;
+      border-radius: 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      box-shadow: 0 0 40px rgba(59,130,246,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+
+    .btn-start:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 60px rgba(59,130,246,0.45);
+    }
+
+    /* ── APP ── */
+    #app {
+      display: none;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .app-header {
+      text-align: center;
+      padding: 28px 0 32px;
+      position: relative;
+    }
+
+    .app-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .session-badge {
+      display: inline-block;
+      margin-top: 8px;
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: var(--success);
+      border-radius: 100px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
+
+    /* Steps indicator */
+    .steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 28px;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .step-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+      white-space: nowrap;
+      transition: color 0.3s;
+    }
+
+    .step.active .step-num {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 16px rgba(59,130,246,0.4);
+    }
+
+    .step.active .step-label { color: var(--text); }
+
+    .step.done .step-num {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+    }
+
+    .step.done .step-label { color: var(--success); }
+
+    .step-line {
+      width: 32px;
+      height: 2px;
+      background: var(--border);
+      margin: 0 4px;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .step-line.done { background: var(--success); }
+
+    /* Panels */
+    .panel {
+      display: none;
+      animation: fadeUp 0.35s ease;
+    }
+
+    .panel.active { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .card {
-      background:rgba(255,255,255,0.08);
-      padding:20px;
-      margin:15px auto;
-      border-radius:15px;
-      max-width:400px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
     }
 
-    #appSection {
-      display:none;
-      max-width:400px;
-      margin:auto;
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    input, button {
-      width:100%;
-      padding:10px;
-      margin-top:10px;
-      border-radius:10px;
-      border:none;
+    .card-title .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
     }
 
-    video, img {
-      width:100%;
-      margin-top:10px;
-      border-radius:10px;
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 16px;
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      margin-bottom: 16px;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    }
+
+    input[type="text"].valid { border-color: var(--success); }
+    input[type="text"].invalid { border-color: var(--danger); }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #6366f1);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      margin-top: 8px;
+    }
+
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success), #059669);
+      color: #fff;
+    }
+
+    .btn-success:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-success:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* QR Scanner */
+    #qr-reader {
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+    }
+
+    #qr-reader video { border-radius: 12px; }
+
+    .qr-status {
+      margin-top: 12px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      display: none;
+    }
+
+    .qr-status.success {
+      display: block;
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: var(--success);
+    }
+
+    .qr-status.scanning {
+      display: block;
+      background: rgba(59,130,246,0.10);
+      border: 1px solid rgba(59,130,246,0.2);
+      color: var(--accent2);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* Camera */
+    #camera-container {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      aspect-ratio: 4/3;
+    }
+
+    #video-feed {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .camera-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .face-guide {
+      width: 160px;
+      height: 200px;
+      border: 2.5px solid rgba(59,130,246,0.8);
+      border-radius: 80px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);
+      animation: guide-pulse 2s infinite;
+    }
+
+    @keyframes guide-pulse {
+      0%, 100% { border-color: rgba(59,130,246,0.8); }
+      50% { border-color: rgba(6,182,212,0.8); }
+    }
+
+    .countdown-badge {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      display: none;
+    }
+
+    #photo-preview {
+      width: 100%;
+      border-radius: 12px;
+      display: none;
+      margin-top: 12px;
+      border: 2px solid var(--success);
+    }
+
+    /* Anti-cheat warnings */
+    .warn-box {
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.25);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 12.5px;
+      color: var(--warn);
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .warn-box .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* Cheat detection overlay */
+    #cheat-alert {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(239,68,68,0.95);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 40px;
+      backdrop-filter: blur(10px);
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+
+    #cheat-alert.show { display: flex; }
+
+    #cheat-alert h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 32px;
+      margin: 16px 0 8px;
+    }
+
+    #cheat-alert p { opacity: 0.85; font-size: 15px; line-height: 1.6; }
+
+    #cheat-alert .icon { font-size: 64px; }
+
+    /* Success screen */
+    #success-screen {
+      display: none;
+      text-align: center;
+      padding: 40px 24px;
+      animation: fadeUp 0.5s ease;
+    }
+
+    #success-screen.show { display: block; }
+
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, var(--success), #059669);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin: 0 auto 24px;
+      box-shadow: 0 0 40px rgba(16,185,129,0.4);
+    }
+
+    #success-screen h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    #success-screen p { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+
+    .receipt {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: left;
+      margin-bottom: 24px;
+    }
+
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .receipt-row:last-child { border: none; }
+    .receipt-row .key { color: var(--muted); }
+    .receipt-row .val { font-weight: 600; }
+
+    /* Logs */
+    #logs-section {
+      margin-top: 48px;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0 16px 60px;
+    }
+
+    #logs-section h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .log-entry {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--success);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+
+    .log-entry .name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .log-entry .meta { color: var(--muted); }
+    .log-entry .flag { color: var(--warn); font-size: 12px; margin-top: 4px; }
+
+    .log-entry.flagged { border-left-color: var(--warn); }
+
+    .empty-logs {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .btn-sm {
+      width: auto;
+      padding: 8px 16px;
+      font-size: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+    .logs-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .logs-count {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 100px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* Timer bar */
+    .timer-bar {
+      height: 3px;
+      background: var(--surface2);
+      border-radius: 3px;
+      margin: 12px 0 0;
+      overflow: hidden;
+    }
+
+    .timer-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 3px;
+      transition: width 1s linear;
+    }
+
+    /* Checkbox */
+    .checkbox-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 4px;
+      margin-bottom: 16px;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 2px 0 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .checkbox-row label {
+      font-size: 13px;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--muted);
+      font-weight: 400;
+      cursor: pointer;
+    }
+
+    /* Responsive */
+    @media (max-width: 420px) {
+      .step-label { display: none; }
+      .step-line { width: 20px; }
     }
   </style>
 </head>
-
 <body>
 
-<header>
-  <h1>ISEP SmartPresence</h1>
-
-  <div class="btn" onclick="openApp()">🎓 Accéder à l'application</div>
-  <a href="#contact" class="btn">📞 Contact</a>
-</header>
-
-<div class="section">
-  <div class="card">📸 Scan QR sécurisé</div>
-  <div class="card">📷 Preuve photo</div>
+<!-- ── CHEAT ALERT ── -->
+<div id="cheat-alert">
+  <div class="icon">🚫</div>
+  <h2>Tentative de triche détectée</h2>
+  <p id="cheat-msg">Vous avez quitté la page pendant l'enregistrement.<br>Votre session a été annulée.</p>
 </div>
 
-<!-- APP -->
-<div id="appSection" class="section">
-
-  <h2>📸 Enregistrer présence</h2>
-
-  <input id="nom" placeholder="Nom">
-  <input id="matricule" placeholder="Matricule">
-
-  <button onclick="startScanner()">Scanner QR</button>
-  <div id="reader"></div>
-
-  <video id="video" autoplay></video>
-
-  <button onclick="takePhoto()">Valider présence</button>
-
-  <img id="preview">
-
+<!-- ── LANDING ── -->
+<div id="landing">
+  <div class="grid-bg"></div>
+  <div class="logo-badge"><span>🎓</span> ISEP — Système de présence</div>
+  <h1>Smart<br>Presence</h1>
+  <p class="subtitle">Enregistrement de présence sécurisé avec scan QR, vérification photo et détection anti-triche en temps réel.</p>
+  <div class="features">
+    <div class="feature-pill">📷 Photo obligatoire</div>
+    <div class="feature-pill">🔍 Scan QR de cours</div>
+    <div class="feature-pill">🛡️ Anti-triche actif</div>
+    <div class="feature-pill">⏱️ Session limitée</div>
+  </div>
+  <button class="btn-start" onclick="startApp()">Commencer l'enregistrement →</button>
 </div>
 
-<div class="section" id="contact">
-  <div class="card">
-    📱 78 751 49 35<br>
-    📧 admin@isep.sn
+<!-- ── APP ── -->
+<div id="app">
+  <div class="app-header">
+    <h2>Enregistrement de présence</h2>
+    <div class="session-badge" id="session-badge">Session active</div>
+    <div class="timer-bar"><div class="timer-bar-fill" id="timer-bar" style="width:100%"></div></div>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps">
+    <div class="step active" id="s1">
+      <div class="step-num">1</div>
+      <div class="step-label">Identité</div>
+    </div>
+    <div class="step-line" id="l1"></div>
+    <div class="step active" id="s2" style="opacity:0.4">
+      <div class="step-num">2</div>
+      <div class="step-label">QR Code</div>
+    </div>
+    <div class="step-line" id="l2"></div>
+    <div class="step" id="s3" style="opacity:0.4">
+      <div class="step-num">3</div>
+      <div class="step-label">Photo</div>
+    </div>
+    <div class="step-line" id="l3"></div>
+    <div class="step" id="s4" style="opacity:0.4">
+      <div class="step-num">4</div>
+      <div class="step-label">Valider</div>
+    </div>
+  </div>
+
+  <!-- Panel 1: Identité -->
+  <div class="panel active" id="panel-1">
+    <div class="card">
+      <div class="card-title"><div class="dot"></div>Informations personnelles</div>
+      <label>Nom complet *</label>
+      <input type="text" id="nom" placeholder="Ex: Moussa Diallo" oninput="validateIdentity()">
+      <label>Numéro de matricule *</label>
+      <input type="text" id="matricule" placeholder="Ex: ISEP2024-001" oninput="validateIdentity()">
+      <label>Filière</label>
+      <input type="text" id="filiere" placeholder="Ex: Génie Logiciel L3" oninput="validateIdentity()">
+      <div class="checkbox-row">
+        <input type="checkbox" id="consent" onchange="validateIdentity()">
+        <label for="consent">Je certifie que ces informations sont correctes et que je suis bien présent(e) en salle.</label>
+      </div>
+      <button class="btn btn-primary" id="btn-step1" onclick="goStep(2)" disabled>
+        Continuer → Scanner le QR
+      </button>
+    </div>
+    <div class="warn-box">
+      <div class="icon">⚠️</div>
+      <div>Toute tentative de fraude (fausse identité, signature pour autrui) sera signalée à l'administration et entraînera des sanctions disciplinaires.</div>
+    </div>
+  </div>
+
+  <!-- Panel 2: QR -->
+  <div class="panel" id="panel-2">
+    <div class="card">
+      <div class="card-title"><div class="dot"></div>Scanner le QR Code de la séance</div>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Scannez le QR code affiché par votre enseignant au tableau.</p>
+      <div id="qr-reader"></div>
+      <div class="qr-status scanning" id="qr-status">🔍 Recherche du QR code en cours...</div>
+      <div class="warn-box" style="margin-top:16px;">
+        <div class="icon">📡</div>
+        <div>Le QR code change toutes les 5 minutes. Un code expiré sera rejeté.</div>
+      </div>
+      <button class="btn btn-outline" onclick="skipQR()" style="margin-top:16px;">
+        QR code indisponible — continuer manuellement
+      </button>
+    </div>
+  </div>
+
+  <!-- Panel 3: Photo -->
+  <div class="panel" id="panel-3">
+    <div class="card">
+      <div class="card-title"><div class="dot"></div>Photo de présence</div>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Placez votre visage dans le cadre oval et prenez la photo.</p>
+      <div id="camera-container">
+        <video id="video-feed" autoplay playsinline muted></video>
+        <div class="camera-overlay">
+          <div class="face-guide"></div>
+        </div>
+        <div class="countdown-badge" id="countdown"></div>
+      </div>
+      <canvas id="canvas-hidden" style="display:none;"></canvas>
+      <img id="photo-preview" alt="Aperçu photo">
+
+      <button class="btn btn-primary" id="btn-photo" onclick="takePhoto()" style="margin-top:16px;" disabled>
+        📸 Prendre la photo
+      </button>
+      <button class="btn btn-outline" id="btn-retake" onclick="retakePhoto()" style="display:none; margin-top:8px;">
+        🔄 Reprendre la photo
+      </button>
+      <button class="btn btn-success" id="btn-step3" onclick="goStep(4)" disabled style="margin-top:8px;">
+        Continuer → Valider
+      </button>
+    </div>
+    <div class="warn-box">
+      <div class="icon">👁️</div>
+      <div>Votre photo sera vérifiée. Portez votre visage visible et évitez les masques ou occlusions.</div>
+    </div>
+  </div>
+
+  <!-- Panel 4: Confirmation -->
+  <div class="panel" id="panel-4">
+    <div class="card">
+      <div class="card-title"><div class="dot"></div>Confirmation de présence</div>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Vérifiez vos informations avant de valider.</p>
+
+      <div class="receipt" id="summary-card"></div>
+      <img id="photo-confirm" style="width:100%; border-radius:10px; margin-bottom:16px; display:none;" alt="Photo confirmée">
+
+      <button class="btn btn-success" id="btn-submit" onclick="submitPresence()">
+        ✅ Valider ma présence
+      </button>
+      <button class="btn btn-outline" onclick="goStep(1)" style="margin-top:8px;">
+        ✏️ Modifier mes informations
+      </button>
+    </div>
+  </div>
+
+  <!-- Success -->
+  <div id="success-screen">
+    <div class="success-icon">✅</div>
+    <h2>Présence enregistrée !</h2>
+    <p>Votre présence a été confirmée avec succès.<br>Vous pouvez fermer cette page.</p>
+    <div class="receipt" id="final-receipt"></div>
+    <button class="btn btn-outline" onclick="resetApp()">Nouvelle session</button>
   </div>
 </div>
 
+<!-- ── LOGS ── -->
+<div id="logs-section" style="display:none;">
+  <div class="logs-header">
+    <h3>📋 Présences enregistrées <span class="logs-count" id="logs-count">0</span></h3>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-sm" onclick="exportCSV()">⬇️ Exporter CSV</button>
+      <button class="btn-sm" onclick="clearLogs()">🗑️ Effacer</button>
+    </div>
+  </div>
+  <div id="logs-list"></div>
+</div>
+
 <script>
-// OUVRIR APP
-function openApp(){
-  document.getElementById("appSection").style.display="block";
-  window.scrollTo(0,document.body.scrollHeight);
-}
+  // ── STATE ──
+  let state = {
+    step: 1,
+    nom: '', matricule: '', filiere: '',
+    qrData: null, qrScanned: false,
+    photoData: null,
+    sessionId: generateSessionId(),
+    startTime: null,
+    timerInterval: null,
+    sessionDuration: 600, // 10 min
+    timeLeft: 600,
+    cameraStream: null,
+    qrScanner: null,
+    cheatCount: 0,
+    presence: []
+  };
 
-// SCAN QR
-function startScanner(){
-  let qr = new Html5Qrcode("reader");
+  function generateSessionId() {
+    return 'SES-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2,4).toUpperCase();
+  }
 
-  Html5Qrcode.getCameras().then(devices=>{
-    qr.start(devices[0].id,{fps:10,qrbox:250},
-    ()=>{
-      qr.stop();
-      startCamera();
+  // ── ANTI-CHEAT: visibility ──
+  document.addEventListener('visibilitychange', () => {
+    if (state.step >= 2 && state.step <= 4 && document.hidden) {
+      state.cheatCount++;
+      if (state.cheatCount >= 2) {
+        triggerCheatAlert('Vous avez quitté la page plusieurs fois pendant l\'enregistrement.\nVotre session a été annulée et l\'incident signalé.');
+      } else {
+        showCheatWarn('⚠️ Attention : ne quittez pas la page pendant l\'enregistrement !');
+      }
+    }
+  });
+
+  function triggerCheatAlert(msg) {
+    document.getElementById('cheat-msg').innerHTML = msg.replace('\n','<br>');
+    document.getElementById('cheat-alert').classList.add('show');
+    stopCamera(); stopQR();
+    setTimeout(() => {
+      document.getElementById('cheat-alert').classList.remove('show');
+      resetApp();
+    }, 5000);
+  }
+
+  function showCheatWarn(msg) {
+    // Flash the page border
+    document.body.style.outline = '4px solid var(--warn)';
+    setTimeout(() => document.body.style.outline = '', 2000);
+  }
+
+  // ── LANDING → APP ──
+  function startApp() {
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('logs-section').style.display = 'block';
+    state.startTime = new Date();
+    startTimer();
+    renderLogs();
+  }
+
+  // ── TIMER ──
+  function startTimer() {
+    state.timeLeft = state.sessionDuration;
+    state.timerInterval = setInterval(() => {
+      state.timeLeft--;
+      const pct = (state.timeLeft / state.sessionDuration) * 100;
+      document.getElementById('timer-bar').style.width = pct + '%';
+      const min = Math.floor(state.timeLeft / 60);
+      const sec = state.timeLeft % 60;
+      document.getElementById('session-badge').textContent = `Session: ${min}:${sec.toString().padStart(2,'0')} restant`;
+      if (state.timeLeft <= 0) {
+        clearInterval(state.timerInterval);
+        triggerCheatAlert('La session a expiré.\nVeuillez recommencer.');
+      }
+    }, 1000);
+  }
+
+  // ── IDENTITY VALIDATION ──
+  function validateIdentity() {
+    const nom = document.getElementById('nom').value.trim();
+    const mat = document.getElementById('matricule').value.trim();
+    const consent = document.getElementById('consent').checked;
+    const ok = nom.length >= 3 && mat.length >= 3 && consent;
+    document.getElementById('btn-step1').disabled = !ok;
+    document.getElementById('nom').className = nom.length >= 3 ? 'valid' : (nom.length > 0 ? 'invalid' : '');
+    document.getElementById('matricule').className = mat.length >= 3 ? 'valid' : (mat.length > 0 ? 'invalid' : '');
+  }
+
+  // ── STEP NAVIGATION ──
+  function goStep(n) {
+    state.step = n;
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + n).classList.add('active');
+    updateSteps(n);
+
+    if (n === 1) { stopCamera(); stopQR(); }
+    if (n === 2) { startQRScanner(); }
+    if (n === 3) { stopQR(); startCamera(); }
+    if (n === 4) { stopCamera(); buildSummary(); }
+  }
+
+  function updateSteps(active) {
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById('s' + i);
+      el.classList.remove('active', 'done');
+      el.style.opacity = '0.4';
+      if (i < active) { el.classList.add('done'); el.style.opacity = '1'; }
+      if (i === active) { el.classList.add('active'); el.style.opacity = '1'; }
+      if (i > active) { el.style.opacity = '0.4'; }
+    }
+    for (let i = 1; i <= 3; i++) {
+      const ln = document.getElementById('l' + i);
+      ln.classList.toggle('done', i < active);
+    }
+  }
+
+  // ── QR SCANNER ──
+  function startQRScanner() {
+    document.getElementById('qr-status').className = 'qr-status scanning';
+    document.getElementById('qr-status').textContent = '🔍 Recherche du QR code en cours...';
+
+    state.qrScanner = new Html5Qrcode('qr-reader');
+    Html5Qrcode.getCameras().then(devices => {
+      if (!devices || !devices.length) {
+        document.getElementById('qr-status').className = 'qr-status';
+        document.getElementById('qr-status').textContent = '❌ Aucune caméra détectée.';
+        document.getElementById('qr-status').style.display = 'block';
+        return;
+      }
+      const cam = devices.find(d => d.label.toLowerCase().includes('back')) || devices[0];
+      state.qrScanner.start(
+        cam.id,
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        (decodedText) => {
+          state.qrData = decodedText;
+          state.qrScanned = true;
+          document.getElementById('qr-status').className = 'qr-status success';
+          document.getElementById('qr-status').textContent = '✅ QR scanné : ' + decodedText.substring(0, 40);
+          stopQR();
+          setTimeout(() => goStep(3), 800);
+        },
+        () => {}
+      ).catch(() => {
+        document.getElementById('qr-status').className = 'qr-status';
+        document.getElementById('qr-status').style.display = 'block';
+        document.getElementById('qr-status').textContent = '❌ Impossible d\'accéder à la caméra.';
+      });
+    }).catch(() => {
+      document.getElementById('qr-status').textContent = '❌ Caméra non accessible.';
     });
+  }
+
+  function stopQR() {
+    if (state.qrScanner) {
+      state.qrScanner.stop().catch(() => {});
+      state.qrScanner = null;
+    }
+  }
+
+  function skipQR() {
+    state.qrData = 'MANUEL';
+    state.qrScanned = false;
+    stopQR();
+    goStep(3);
+  }
+
+  // ── CAMERA ──
+  function startCamera() {
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+    }).then(stream => {
+      state.cameraStream = stream;
+      const video = document.getElementById('video-feed');
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        video.play();
+        document.getElementById('btn-photo').disabled = false;
+      };
+    }).catch(() => {
+      alert('❌ Impossible d\'accéder à la caméra. Veuillez autoriser l\'accès.');
+    });
+  }
+
+  function stopCamera() {
+    if (state.cameraStream) {
+      state.cameraStream.getTracks().forEach(t => t.stop());
+      state.cameraStream = null;
+    }
+  }
+
+  function takePhoto() {
+    const video = document.getElementById('video-feed');
+    const canvas = document.getElementById('canvas-hidden');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    // Watermark
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillText(state.matricule + ' | ' + new Date().toLocaleString('fr-FR'), 10, canvas.height - 12);
+    state.photoData = canvas.toDataURL('image/jpeg', 0.85);
+    document.getElementById('photo-preview').src = state.photoData;
+    document.getElementById('photo-preview').style.display = 'block';
+    document.getElementById('btn-photo').style.display = 'none';
+    document.getElementById('btn-retake').style.display = 'block';
+    document.getElementById('btn-step3').disabled = false;
+    stopCamera();
+  }
+
+  function retakePhoto() {
+    state.photoData = null;
+    document.getElementById('photo-preview').style.display = 'none';
+    document.getElementById('btn-photo').style.display = 'block';
+    document.getElementById('btn-retake').style.display = 'none';
+    document.getElementById('btn-step3').disabled = true;
+    startCamera();
+  }
+
+  // ── SUMMARY ──
+  function buildSummary() {
+    const nom = document.getElementById('nom').value.trim();
+    const mat = document.getElementById('matricule').value.trim();
+    const fil = document.getElementById('filiere').value.trim();
+    state.nom = nom; state.matricule = mat; state.filiere = fil;
+
+    const now = new Date();
+    const html = `
+      <div class="receipt-row"><span class="key">Nom</span><span class="val">${nom}</span></div>
+      <div class="receipt-row"><span class="key">Matricule</span><span class="val">${mat}</span></div>
+      ${fil ? `<div class="receipt-row"><span class="key">Filière</span><span class="val">${fil}</span></div>` : ''}
+      <div class="receipt-row"><span class="key">Date & Heure</span><span class="val">${now.toLocaleString('fr-FR')}</span></div>
+      <div class="receipt-row"><span class="key">Session ID</span><span class="val" style="font-size:11px;">${state.sessionId}</span></div>
+      <div class="receipt-row"><span class="key">QR Code</span><span class="val" style="color:${state.qrScanned ? 'var(--success)' : 'var(--warn)'}">${state.qrScanned ? '✅ Scanné' : '⚠️ Manuel'}</span></div>
+    `;
+    document.getElementById('summary-card').innerHTML = html;
+    if (state.photoData) {
+      const img = document.getElementById('photo-confirm');
+      img.src = state.photoData;
+      img.style.display = 'block';
+    }
+  }
+
+  // ── SUBMIT ──
+  function submitPresence() {
+    const entry = {
+      id: Date.now(),
+      nom: state.nom,
+      matricule: state.matricule,
+      filiere: state.filiere,
+      qr: state.qrScanned ? state.qrData : 'MANUEL',
+      qrScanned: state.qrScanned,
+      photo: state.photoData,
+      timestamp: new Date().toISOString(),
+      sessionId: state.sessionId,
+      cheatCount: state.cheatCount
+    };
+
+    // Save to localStorage
+    let logs = JSON.parse(localStorage.getItem('presence_logs') || '[]');
+    logs.unshift(entry);
+    localStorage.setItem('presence_logs', JSON.stringify(logs));
+
+    // Show success
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    updateSteps(5);
+    const ss = document.getElementById('success-screen');
+    ss.classList.add('show');
+    const now = new Date(entry.timestamp);
+    document.getElementById('final-receipt').innerHTML = `
+      <div class="receipt-row"><span class="key">Nom</span><span class="val">${entry.nom}</span></div>
+      <div class="receipt-row"><span class="key">Matricule</span><span class="val">${entry.matricule}</span></div>
+      <div class="receipt-row"><span class="key">Heure</span><span class="val">${now.toLocaleTimeString('fr-FR')}</span></div>
+      <div class="receipt-row"><span class="key">Statut</span><span class="val" style="color:var(--success)">✅ Validé</span></div>
+    `;
+    clearInterval(state.timerInterval);
+    renderLogs();
+  }
+
+  // ── LOGS ──
+  function renderLogs() {
+    const logs = JSON.parse(localStorage.getItem('presence_logs') || '[]');
+    document.getElementById('logs-count').textContent = logs.length;
+    const container = document.getElementById('logs-list');
+    if (!logs.length) {
+      container.innerHTML = '<div class="empty-logs">📭 Aucune présence enregistrée</div>';
+      return;
+    }
+    container.innerHTML = logs.map(e => {
+      const d = new Date(e.timestamp);
+      const flagged = !e.qrScanned || e.cheatCount > 0;
+      return `
+        <div class="log-entry ${flagged ? 'flagged' : ''}">
+          <div class="name">${e.nom}</div>
+          <div class="meta">📋 ${e.matricule}${e.filiere ? ' · ' + e.filiere : ''} · ${d.toLocaleString('fr-FR')}</div>
+          ${flagged ? `<div class="flag">⚠️ ${!e.qrScanned ? 'QR manuel' : ''} ${e.cheatCount > 0 ? '· Tab-switch détecté (×'+e.cheatCount+')' : ''}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function clearLogs() {
+    if (confirm('Effacer tous les enregistrements ?')) {
+      localStorage.removeItem('presence_logs');
+      renderLogs();
+    }
+  }
+
+  function exportCSV() {
+    const logs = JSON.parse(localStorage.getItem('presence_logs') || '[]');
+    if (!logs.length) { alert('Aucune donnée à exporter.'); return; }
+    const headers = ['Nom', 'Matricule', 'Filière', 'Date/Heure', 'QR Code', 'Session ID', 'Alertes triche'];
+    const rows = logs.map(e => [
+      e.nom, e.matricule, e.filiere || '-',
+      new Date(e.timestamp).toLocaleString('fr-FR'),
+      e.qrScanned ? 'Scanné: ' + e.qr : 'Manuel',
+      e.sessionId,
+      e.cheatCount
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'presences_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click(); URL.revokeObjectURL(url);
+  }
+
+  // ── RESET ──
+  function resetApp() {
+    document.getElementById('cheat-alert').classList.remove('show');
+    document.getElementById('success-screen').classList.remove('show');
+    document.getElementById('photo-preview').style.display = 'none';
+    document.getElementById('btn-photo').style.display = 'block';
+    document.getElementById('btn-retake').style.display = 'none';
+    document.getElementById('btn-step3').disabled = true;
+    document.getElementById('btn-photo').disabled = true;
+    document.getElementById('nom').value = '';
+    document.getElementById('matricule').value = '';
+    document.getElementById('filiere').value = '';
+    document.getElementById('consent').checked = false;
+    document.getElementById('btn-step1').disabled = true;
+    document.getElementById('qr-status').className = 'qr-status';
+    stopCamera(); stopQR();
+    clearInterval(state.timerInterval);
+    state = { ...state, step: 1, nom: '', matricule: '', filiere: '', qrData: null, qrScanned: false, photoData: null, sessionId: generateSessionId(), cheatCount: 0 };
+    startTimer();
+    goStep(1);
+  }
+
+  // Initial render
+  window.addEventListener('load', () => {
+    renderLogs();
+    if (localStorage.getItem('presence_logs')) document.getElementById('logs-section').style.display = 'block';
   });
-}
-
-// CAMERA
-function startCamera(){
-  navigator.mediaDevices.getUserMedia({video:true})
-  .then(s=>{
-    document.getElementById("video").srcObject = s;
-  });
-}
-
-// PHOTO
-function takePhoto(){
-  let video = document.getElementById("video");
-  let canvas = document.createElement("canvas");
-
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
-  canvas.getContext("2d").drawImage(video,0,0);
-
-  let img = canvas.toDataURL();
-  document.getElementById("preview").src = img;
-
-  alert("✅ Présence enregistrée !");
-}
 </script>
-
 </body>
 </html>
